@@ -1,12 +1,13 @@
 #ifndef BODY_H
 #define BODY_H
 
-#include "vec2.h"
+#include "math/vec2.h"
 
 typedef struct {
-    double mass;
+    float mass;
     Vector2 position;
     Vector2 velocity;
+    Vector2 force;
 } Body;
 
 #endif
