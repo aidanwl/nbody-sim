@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(Sandbox C)
+project(NBody C)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
@@ -22,5 +22,5 @@ set(BUILD_GAMES OFF CACHE BOOL "" FORCE)
 
 FetchContent_MakeAvailable(raylib)
 
-add_executable(Sandbox main.c)
-target_link_libraries(Sandbox PRIVATE raylib)
+add_executable(nbody main.c)
+target_link_libraries(nbody PRIVATE raylib)
