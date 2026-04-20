@@ -30,6 +30,7 @@ add_executable(nbody
     src/render/renderer.c
     src/ui/widget.c
     src/app/app.c
+    src/editor/body_creator.c
 )
 
 target_include_directories(nbody PRIVATE include)
