@@ -1,11 +1,11 @@
 #include "raylib.h"
 #include "render/renderer.h"
 
-void render_body(Vector2 position) {
+void render_body(Vector2 position, float radius, Color color) {
     DrawCircle(
         (int)position.x,
         (int)position.y,
-        5.0f,
-        WHITE
+        radius,
+        color
     );
 }

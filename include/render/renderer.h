@@ -3,6 +3,6 @@
 
 #include "math/vec2.h"
 
-void render_body(Vector2 position);
+void render_body(Vector2 position, float radius, Color color);
 
 #endif
