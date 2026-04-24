@@ -25,12 +25,11 @@ FetchContent_MakeAvailable(raylib)
 add_executable(nbody
     src/main.c
     src/core/vec2.c
-    src/core/gravity.c
     src/core/simulation.c
     src/core/renderer.c
     src/core/widget.c
     src/app/app.c
-    src/core/body_creator.c
+    src/editor/body_creator.c
 )
 
 target_include_directories(nbody PRIVATE include)

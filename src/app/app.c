@@ -6,7 +6,9 @@
 #include "core/simulation.h"
 #include "core/renderer.h"
 #include "core/widget.h"
-#include "core/body_creator.h"
+#include "editor/body_creator.h"
+
+// Temporary testing ground
 
 /*
 static void app_init_bodies(App *app) {

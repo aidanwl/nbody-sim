@@ -3,7 +3,7 @@
 
 #include <stdbool.h>
 #include "core/body.h"
-#include "core/body_creator.h"
+#include "editor/body_creator.h"
 
 #define MAX_BODIES 128
 
