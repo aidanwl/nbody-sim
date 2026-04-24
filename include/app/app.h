@@ -3,7 +3,7 @@
 
 #include <stdbool.h>
 #include "core/body.h"
-#include "editor/body_creator.h"
+#include "core/body_creator.h"
 
 #define MAX_BODIES 128
 
@@ -11,7 +11,7 @@ typedef struct {
     Body bodies[MAX_BODIES];
     int body_count;
 
-    double dt;
+    float dt;
     bool paused;
 
     int screen_width;

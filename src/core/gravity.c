@@ -1,7 +1,7 @@
 #include <math.h>
-#include "physics/gravity.h"
-#include "math/vec2.h"
-#include "config/constants.h"
+#include "core/gravity.h"
+#include "core/vec2.h"
+#include "core/constants.h"
 
 Vector2 gravitational_force(const Body *a, const Body *b) {
 	

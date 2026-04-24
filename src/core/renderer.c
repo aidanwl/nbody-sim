@@ -1,5 +1,5 @@
 #include "raylib.h"
-#include "render/renderer.h"
+#include "core/renderer.h"
 
 void render_body(Vector2 position, float radius, Color color) {
     DrawCircle(

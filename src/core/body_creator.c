@@ -1,6 +1,6 @@
-#include "editor/body_creator.h"
-#include "ui/widget.h"
-#include "render/renderer.h"
+#include "core/body_creator.h"
+#include "core/widget.h"
+#include "core/renderer.h"
 #include "raylib.h"
 
 void body_creator_init(BodyCreator *creator, int screen_width, int screen_height) {

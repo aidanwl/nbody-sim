@@ -1,6 +1,6 @@
-#include "physics/simulation.h"
-#include "physics/gravity.h"
-#include "math/vec2.h"
+#include "core/simulation.h"
+#include "core/gravity.h"
+#include "core/vec2.h"
 
 void update_body_position(Body *b, float dt) {
 

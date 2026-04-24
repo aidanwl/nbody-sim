@@ -1,6 +1,6 @@
 #include <math.h>
-#include "math/vec2.h"
-#include "config/constants.h"
+#include "core/vec2.h"
+#include "core/constants.h"
 
 // ---------- Vector Return ------------------------
 

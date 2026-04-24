@@ -2,11 +2,11 @@
 
 #include <math.h>
 
-#include "config/constants.h"
-#include "physics/simulation.h"
-#include "render/renderer.h"
-#include "ui/widget.h"
-#include "editor/body_creator.h"
+#include "core/constants.h"
+#include "core/simulation.h"
+#include "core/renderer.h"
+#include "core/widget.h"
+#include "core/body_creator.h"
 
 /*
 static void app_init_bodies(App *app) {

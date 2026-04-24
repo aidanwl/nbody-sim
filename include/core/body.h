@@ -1,7 +1,7 @@
 #ifndef BODY_H
 #define BODY_H
 
-#include "math/vec2.h"
+#include "core/vec2.h"
 
 typedef struct {
     float mass;
