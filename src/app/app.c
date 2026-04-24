@@ -8,6 +8,7 @@
 #include "ui/widget.h"
 #include "editor/body_creator.h"
 
+/*
 static void app_init_bodies(App *app) {
     app->body_count = 3;
 
@@ -30,9 +31,47 @@ static void app_init_bodies(App *app) {
     app->bodies[2].force = (Vector2){0.0f, 0.0f};
 }
 
+*/
+
+static void app_init_bodies(App *app) {
+    app->body_count = 4;
+
+    // Star A
+    app->bodies[0].mass = 600.0f;
+    app->bodies[0].position = (Vector2){350.0f, 300.0f};
+    app->bodies[0].velocity = (Vector2){0.0f, -1.15f};
+    app->bodies[0].force = (Vector2){0.0f, 0.0f};
+
+    // Star B
+    app->bodies[1].mass = 600.0f;
+    app->bodies[1].position = (Vector2){450.0f, 300.0f};
+    app->bodies[1].velocity = (Vector2){0.0f, 1.15f};
+    app->bodies[1].force = (Vector2){0.0f, 0.0f};
+
+    // Inner planet
+    app->bodies[2].mass = 5.0f;
+    app->bodies[2].position = (Vector2){400.0f, 210.0f};
+    app->bodies[2].velocity = (Vector2){2.7f, 0.0f};
+    app->bodies[2].force = (Vector2){0.0f, 0.0f};
+
+    // Outer planet / comet
+    app->bodies[3].mass = 2.0f;
+    app->bodies[3].position = (Vector2){400.0f, 470.0f};
+    app->bodies[3].velocity = (Vector2){-2.0f, 0.0f};
+    app->bodies[3].force = (Vector2){0.0f, 0.0f};
+}
+
+
 static void app_update_simulation(App *app) {
     if (!app->paused) {
-        time_step(app->bodies, app->body_count, app->dt);
+	int substeps = 10; 
+
+	float sim_speed = 4.0; 
+	double sub_dt = (app->dt * sim_speed) / substeps;
+
+	for(int i = 0; i < substeps; i++) {
+    	    time_step(app->bodies, app->body_count, app->dt);
+	}
     }
 }
 
@@ -41,8 +80,8 @@ static void app_draw_controls(App *app) {
 
     app->dt = widget_slider(
         (Rectangle){20, 100, 200, 20},
-        0.1f,
-        10.0f,
+        0.001f,
+        0.25f,
         (float)app->dt,
         "Time Step"
     );
