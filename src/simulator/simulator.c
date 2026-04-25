@@ -17,6 +17,7 @@ static void simulator_draw_bodies(const Simulator *sim, Body bodies[], int body_
 void simulator_init(Simulator *sim) {
     sim->camera_offset = (Vector2){0.0f, 0.0f};
     sim->zoom = 1.0f;
+    sim->origin_icon = LoadTexture("../assets/origin.png");
 
     // sim->show_paths = false;
     // sim->show_current_trajectory = false;

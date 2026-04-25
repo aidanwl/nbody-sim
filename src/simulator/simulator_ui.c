@@ -58,8 +58,7 @@ static void simulator_draw_speed_control(Simulator *sim, float *sim_speed) {
 }
 
 static void simulator_draw_navigation(Simulator *sim) {
-    Texture2D origin = LoadTexture("../assets/origin.png");
-    if (widget_image_button((Rectangle){20, 560, 30, 30}, origin)) {
+    if (widget_image_button((Rectangle){20, 560, 30, 30}, sim->origin_icon)) {
         sim->camera_offset = (Vector2){0.0f, 0.0f};
         sim->zoom = 1.0f;
     }

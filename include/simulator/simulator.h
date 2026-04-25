@@ -14,6 +14,8 @@ typedef struct {
     bool filter_body_type;
 
     bool speed_slider_open;
+
+    Texture2D origin_icon;
 } Simulator;
 
 void simulator_init(Simulator *sim);
@@ -25,7 +27,5 @@ void simulator_draw(Simulator *sim, Body bodies[], int body_count, float *sim_sp
 void simulator_update_camera(Simulator *sim, float frame_dt);
 
 void simulator_draw_controls(Simulator *sim, float *sim_speed, bool *paused, int body_count);
-
-bool widget_image_button(Rectangle bounds, Texture2D tex);
 
 #endif

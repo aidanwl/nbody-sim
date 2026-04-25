@@ -79,8 +79,7 @@ void app_update(App *app) {
     simulator_update(&simulator, app->dt);
 }
 
-void app_draw(const App *app_const) {
-    App *app = (App *)app_const;
+void app_draw(App *app) {
 
     simulator_draw(
         &simulator,
@@ -89,15 +88,6 @@ void app_draw(const App *app_const) {
         &app->sim_speed,
         &app->paused
     );
-
-    body_creator_draw_preview(&app->creator);
-
-    if (body_creator_draw(&app->creator, app->screen_width, app->screen_height)) {
-        if (app->body_count < MAX_BODIES) {
-            app->bodies[app->body_count] = app->creator.draft;
-            app->body_count++;
-        }
-    }
 }
 
 /*
