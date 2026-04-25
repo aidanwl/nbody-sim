@@ -42,4 +42,5 @@ void simulator_draw(Simulator *sim, Body bodies[], int body_count, float *sim_sp
     
     simulator_draw_bodies(sim, bodies, body_count);
     simulator_draw_controls(sim, sim_speed, paused, body_count);
+    }
 }
