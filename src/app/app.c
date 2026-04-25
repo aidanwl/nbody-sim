@@ -17,28 +17,36 @@ static void app_init_bodies(App *app) {
         .mass = 600.0f,
         .position = {350.0f, 300.0f},
         .velocity = {0.0f, -1.15f},
-        .force = {0.0f, 0.0f}
+        .force = {0.0f, 0.0f},
+	.trail_count = 0,
+	.trail_start = 0
     };
 
     app->bodies[1] = (Body){
         .mass = 600.0f,
         .position = {450.0f, 300.0f},
         .velocity = {0.0f, 1.15f},
-        .force = {0.0f, 0.0f}
+        .force = {0.0f, 0.0f},
+	.trail_count = 0,
+    	.trail_start = 0
     };
 
     app->bodies[2] = (Body){
         .mass = 5.0f,
         .position = {400.0f, 210.0f},
         .velocity = {2.7f, 0.0f},
-        .force = {0.0f, 0.0f}
+        .force = {0.0f, 0.0f},
+	.trail_count = 0,
+    	.trail_start = 0
     };
 
     app->bodies[3] = (Body){
         .mass = 2.0f,
         .position = {400.0f, 470.0f},
         .velocity = {-2.0f, 0.0f},
-        .force = {0.0f, 0.0f}
+        .force = {0.0f, 0.0f},
+	.trail_count = 0,
+    	.trail_start = 0
     };
 }
 

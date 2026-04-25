@@ -5,6 +5,7 @@
 
 #define EPSILON 1e-9
 
-#define TRAIL_MAX 200
+#define TRAIL_MAX 5000
+
 
 #endif
