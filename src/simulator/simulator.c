@@ -35,6 +35,7 @@ void simulator_draw(Simulator *sim, Body bodies[], int body_count, float *sim_sp
         for (int i = 0; i < body_count; i++) {
             render_trail(&bodies[i], sim->zoom, sim->camera_offset);
         }
+    }
     for (int i = 0; i < body_count; i++) {
         render_trail(&bodies[i], sim->zoom, sim->camera_offset);
 	render_velocity(&bodies[i], sim->zoom, sim->camera_offset);
