@@ -31,14 +31,16 @@ void simulator_update(Simulator *sim, float frame_dt) {
 
 void simulator_draw(Simulator *sim, Body bodies[], int body_count, float *sim_speed, bool *paused) {
 
-    if (sim->show_paths) {
+    if (sim->show_paths || sim->show_current_trajectory) {
         for (int i = 0; i < body_count; i++) {
-            render_trail(&bodies[i], sim->zoom, sim->camera_offset);
+            if (sim->show_paths) {
+                render_trail(&bodies[i], sim->zoom, sim->camera_offset);
+            }   
+            if (sim->show_current_trajectory) {
+                render_velocity(&bodies[i], sim->zoom, sim->camera_offset);
+            }
+            
         }
-    }
-    for (int i = 0; i < body_count; i++) {
-        render_trail(&bodies[i], sim->zoom, sim->camera_offset);
-	render_velocity(&bodies[i], sim->zoom, sim->camera_offset);
     }
     
     simulator_draw_bodies(sim, bodies, body_count);
