@@ -27,6 +27,21 @@ void update_body_velocity(Body *b, Vector2 b_acc_initial, float dt) {
 
 }
 
+void body_add_trail_point(Body *body) {
+
+	int index = (body->trail_start + body->trail_count) % TRAIL_MAX;
+
+	body->trail[index] = body->position; 
+
+	if (body->trail_count < TRAIL_MAX) {
+		body->trail_count++;
+	} else {
+		body->trail_start = (body->trail_start + 1) % TRAIL_MAX;
+	}
+}
+
+
+
 void calculate_all_forces(Body bodies[], int bodycount) {
 	
 	for (int i = 0; i < bodycount; i++) {
@@ -52,6 +67,7 @@ void time_step(Body bodies[], int bodycount, float dt) {
 	for (int i = 0; i < bodycount; i++) {
         	initial_acc[i] = vec2_vscale(bodies[i].force, 1.0 / bodies[i].mass);
         	update_body_position(&bodies[i], dt);
+		body_add_trail_point(&bodies[i]);
     	}
 
 	calculate_all_forces(bodies, bodycount);
