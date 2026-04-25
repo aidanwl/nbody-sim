@@ -116,7 +116,7 @@ static void app_draw_bodies(const App *app) {
 void app_init(App *app, int screen_width, int screen_height) {
     app->screen_width = screen_width;
     app->screen_height = screen_height;
-    app->dt = 0.0;
+    app->dt = 0.0f;
     app->paused = false;
     app->sim_speed = 5.0f;
 
