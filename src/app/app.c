@@ -65,34 +65,37 @@ static void app_init_bodies(App *app) {
 
 
 static void app_update_simulation(App *app) {
-    if (!app->paused) {
-	int substeps = 10; 
+    static float accumulator = 0.0f;
+    const float fixed_dt = 1.0f / 240.0f;
+    
+    if (app->paused) {
+        return;
+    }
 
-	float sim_speed = 4.0; 
-	double sub_dt = (app->dt * sim_speed) / substeps;
+    accumulator += app->dt * app->sim_speed;
 
-	for(int i = 0; i < substeps; i++) {
-    	    time_step(app->bodies, app->body_count, app->dt);
-	}
+    while (accumulator >= fixed_dt) {
+        time_step(app->bodies, app->body_count, fixed_dt);
+        accumulator -= fixed_dt;
     }
 }
 
 static void app_draw_controls(App *app) {
     app->paused = widget_toggle((Rectangle){20, 20, 140, 40}, "Paused", app->paused);
 
-    app->dt = widget_slider(
+    app->sim_speed = widget_slider(
         (Rectangle){20, 100, 200, 20},
-        0.001f,
-        0.25f,
-        (float)app->dt,
-        "Time Step"
+        0.0f,
+        20.0f,
+        app->sim_speed,
+        "Sim Speed"
     );
 
     if (widget_button((Rectangle){20, 220, 140, 40}, "New Body")) {
         app->creator.open = true;
     }
 
-    DrawText(TextFormat("Current Time Step: %.2f", app->dt), 40, 190, 20, WHITE);
+    DrawText(TextFormat("Current Time Step: %.2fx", app->sim_speed), 40, 190, 20, WHITE);
     DrawText(TextFormat("Bodies: %d", app->body_count), 40, 280, 20, WHITE);
 }
 
@@ -113,14 +116,16 @@ static void app_draw_bodies(const App *app) {
 void app_init(App *app, int screen_width, int screen_height) {
     app->screen_width = screen_width;
     app->screen_height = screen_height;
-    app->dt = 1.0 / 40.0;
+    app->dt = 0.0;
     app->paused = false;
+    app->sim_speed = 5.0f;
 
     app_init_bodies(app);
     body_creator_init(&app->creator, screen_width, screen_height);
 }
 
 void app_update(App *app) {
+    app->dt = GetFrameTime();
     app_update_simulation(app);
 }
 

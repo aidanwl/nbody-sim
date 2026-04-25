@@ -12,6 +12,7 @@ typedef struct {
     int body_count;
 
     float dt;
+    float sim_speed;
     bool paused;
 
     int screen_width;
