@@ -118,3 +118,31 @@ float widget_slider(Rectangle bounds, float min, float max, float value, const c
 void widget_label(int x, int y, const char *text, int font_size, Color color) {
     DrawText(text, x, y, font_size, color);
 }
+
+// ----------------- Origin Button ----------------------------
+bool widget_image_button(Rectangle bounds, Texture2D tex) {
+    Vector2 mouse = GetMousePosition();
+
+    bool hovered = CheckCollisionPointRec(mouse, bounds);
+    bool clicked = hovered && IsMouseButtonPressed(MOUSE_LEFT_BUTTON);
+
+    Color tint = hovered ? (Color){200, 200, 200, 255} : WHITE;
+
+    bool pressed = hovered && IsMouseButtonDown(MOUSE_LEFT_BUTTON);
+
+    if (pressed) {
+        bounds.x += 1;
+        bounds.y += 1;
+    }
+
+    DrawTexturePro(
+        tex,
+        (Rectangle){0, 0, (float)tex.width, (float)tex.height},
+        bounds,
+        (Vector2){0, 0},
+        0.0f,
+        tint
+    );
+
+    return clicked;
+}

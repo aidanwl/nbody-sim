@@ -24,19 +24,19 @@ static void simulator_draw_options(Simulator *sim) {
 static void simulator_draw_speed_control(Simulator *sim, float *sim_speed) {
 
     // Button Controls
-    if (widget_button((Rectangle){560, 530, 45, 30}, "0.5x")) {
+    if (widget_button((Rectangle){560, 530, 45, 30}, "x0.5")) {
         *sim_speed = 0.5f;
     }
-    if (widget_button((Rectangle){610, 530, 45, 30}, "1x")) {
+    if (widget_button((Rectangle){610, 530, 45, 30}, "x1")) {
         *sim_speed = 1.0f;
     }
-    if (widget_button((Rectangle){660, 530, 45, 30}, "2x")) {
+    if (widget_button((Rectangle){660, 530, 45, 30}, "x2")) {
         *sim_speed = 2.0f;
     }
-    if (widget_button((Rectangle){710, 530, 45, 30}, "5x")) {
+    if (widget_button((Rectangle){710, 530, 45, 30}, "x5")) {
         *sim_speed = 5.0f;
     }
-    if (widget_button((Rectangle){760, 530, 45, 30}, "20x")) {
+    if (widget_button((Rectangle){760, 530, 45, 30}, "x20")) {
         *sim_speed = 20.0f;
     }
 
@@ -56,3 +56,26 @@ static void simulator_draw_speed_control(Simulator *sim, float *sim_speed) {
     }
 
 }
+
+static void simulator_draw_navigation(Simulator *sim) {
+    Texture2D origin = LoadTexture("../assets/origin.png");
+    if (widget_image_button((Rectangle){20, 560, 30, 30}, origin)) {
+        sim->camera_offset = (Vector2){0.0f, 0.0f};
+        sim->zoom = 1.0f;
+    }
+}
+
+void simulator_draw_controls(Simulator *sim, float *sim_speed, bool *paused, int body_count) {
+    // simulator_draw_mode_selector();
+
+    *paused = widget_toggle((Rectangle){20, 80, 140, 40}, "Paused", *paused);
+
+    simulator_draw_options(sim);
+    simulator_draw_speed_control(sim, sim_speed);
+    simulator_draw_navigation(sim);
+
+    DrawText(TextFormat("Speed: %.2fx", *sim_speed), 20, 140, 20, WHITE);
+    DrawText(TextFormat("Bodies: %d", body_count), 20, 170, 20, WHITE);
+}
+
+

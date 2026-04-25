@@ -26,4 +26,6 @@ void simulator_update_camera(Simulator *sim, float frame_dt);
 
 void simulator_draw_controls(Simulator *sim, float *sim_speed, bool *paused, int body_count);
 
+bool widget_image_button(Rectangle bounds, Texture2D tex);
+
 #endif

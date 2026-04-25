@@ -19,7 +19,7 @@ void simulator_update_camera(Simulator *sim, float frame_dt) {
         sim->camera_offset.x -= pan_speed;
     }
 
-    if (isMouseButtonDown(MOUSE_RIGHT_BUTTON)) {
+    if (IsMouseButtonDown(MOUSE_RIGHT_BUTTON)) {
         Vector2 delta = GetMouseDelta();
         sim->camera_offset = vec2_vadd(sim->camera_offset, delta);
     }
