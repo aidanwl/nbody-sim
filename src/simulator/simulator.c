@@ -19,7 +19,7 @@ void simulator_init(Simulator *sim) {
     sim->zoom = 1.0f;
     sim->origin_icon = LoadTexture("../assets/origin.png");
 
-    // sim->show_paths = false;
+    sim->show_paths = false;
     // sim->show_current_trajectory = false;
 
     sim->speed_slider_open = false;
@@ -31,9 +31,12 @@ void simulator_update(Simulator *sim, float frame_dt) {
 
 void simulator_draw(Simulator *sim, Body bodies[], int body_count, float *sim_speed, bool *paused) {
 
-    for (int i = 0; i < body_count; i++) {
-        render_trail(&bodies[i], sim->zoom, sim->camera_offset);
+    if (sim->show_paths) {
+        for (int i = 0; i < body_count; i++) {
+            render_trail(&bodies[i], sim->zoom, sim->camera_offset);
+        }
     }
+    
 
     simulator_draw_bodies(sim, bodies, body_count);
     simulator_draw_controls(sim, sim_speed, paused, body_count);

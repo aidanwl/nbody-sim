@@ -76,5 +76,3 @@ void simulator_draw_controls(Simulator *sim, float *sim_speed, bool *paused, int
     DrawText(TextFormat("Speed: %.2fx", *sim_speed), 20, 140, 20, WHITE);
     DrawText(TextFormat("Bodies: %d", body_count), 20, 170, 20, WHITE);
 }
-
-

@@ -11,7 +11,6 @@ typedef struct {
 
     bool show_paths;
     bool show_current_trajectory;
-    bool filter_body_type;
 
     bool speed_slider_open;
 
