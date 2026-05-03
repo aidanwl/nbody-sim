@@ -38,6 +38,7 @@ static void body_creator_reset_draft(BodyCreator *creator, int screen_width, int
     creator->draft.color = GREEN;
     creator->draft.trail_count = 0;
     creator->draft.trail_start = 0;
+    creator->draft.trail_sample_counter = 0;
     creator->active_input = BODY_CREATOR_INPUT_NONE;
     body_creator_sync_text(creator);
 }

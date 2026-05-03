@@ -8,7 +8,7 @@ int main() {
     InitWindow(screen_width, screen_height, "NBody Sim");
     SetTargetFPS(60);
 
-    App app;
+    static App app;
     app_init(&app, screen_width, screen_height);
 
     while (!WindowShouldClose()) {

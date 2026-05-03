@@ -33,25 +33,51 @@ void simulator_center_on_world(Simulator *sim, Vector2 world_pos) {
 }
 
 
-static void simulator_draw_trail(const Simulator *sim, const Body *body) {
-    int step = 1;
+static int simulator_path_point_limit(PathMode mode) {
+    switch (mode) {
+        case PATH_MODE_SHORT:
+            return 600;
+        case PATH_MODE_LONG:
+            return 2500;
+        case PATH_MODE_ORBIT:
+            return TRAIL_MAX;
+        case PATH_MODE_OFF:
+        default:
+            return 0;
+    }
+}
 
-    if (body->trail_count > 2000) {
-        step = 8;
-    } else if (body->trail_count > 1000) {
-        step = 4;
-    } else if (body->trail_count > 500) {
-        step = 2;
+static void simulator_draw_trail(const Simulator *sim, const Body *body) {
+    int point_limit = simulator_path_point_limit(sim->path_mode);
+
+    if (point_limit <= 0) {
+        return;
     }
 
-    for (int i = step; i < body->trail_count; i += step) {
+    int visible_count = body->trail_count;
+    if (visible_count > point_limit) {
+        visible_count = point_limit;
+    }
+
+    int draw_start = body->trail_count - visible_count;
+    int step = 1;
+
+    if (visible_count > 8000) {
+        step = 12;
+    } else if (visible_count > 4000) {
+        step = 6;
+    } else if (visible_count > 1500) {
+        step = 3;
+    }
+
+    for (int i = draw_start + step; i < body->trail_count; i += step) {
         int a = (body->trail_start + i - step) % TRAIL_MAX;
         int b = (body->trail_start + i) % TRAIL_MAX;
 
         Vector2 p1 = world_to_screen(sim, body->trail[a]);
         Vector2 p2 = world_to_screen(sim, body->trail[b]);
 
-        DrawLineEx(p1, p2, 2.0f, WHITE);
+        DrawLineEx(p1, p2, 2.0f, body->color);
     }
 }
 
@@ -142,9 +168,9 @@ void simulator_init(Simulator *sim) {
     sim->camera_focus = (Vector2){400.0f, 300.0f};
     sim->camera_pan = (Vector2){0.0f, 0.0f};
     sim->zoom = 1.0f;
-    sim->origin_icon = LoadTexture("../assets/origin.png");
+    sim->origin_icon = LoadTexture(FileExists("assets/origin.png") ? "assets/origin.png" : "../assets/origin.png");
 
-    sim->show_paths = false;
+    sim->path_mode = PATH_MODE_OFF;
     sim->show_current_trajectory = false;
 
     sim->speed_slider_open = false;
@@ -162,9 +188,9 @@ void simulator_draw(Simulator *sim, Body bodies[], int body_count, float *sim_sp
     simulator_update_body_lock(sim, bodies, body_count);
     simulator_update_body_name_selection(sim, bodies, body_count);
 
-    if (sim->show_paths || sim->show_current_trajectory) {
+    if (sim->path_mode != PATH_MODE_OFF || sim->show_current_trajectory) {
         for (int i = 0; i < body_count; i++) {
-            if (sim->show_paths) {
+            if (sim->path_mode != PATH_MODE_OFF) {
                 simulator_draw_trail(sim, &bodies[i]);
             }   
             if (sim->show_current_trajectory) {

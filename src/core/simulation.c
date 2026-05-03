@@ -33,6 +33,13 @@ void update_body_velocity(Body *b, Vector2 b_acc_initial, float dt) {
 }
 
 void body_add_trail_point(Body *body) {
+	body->trail_sample_counter++;
+
+	if (body->trail_sample_counter < TRAIL_SAMPLE_INTERVAL) {
+		return;
+	}
+
+	body->trail_sample_counter = 0;
 
 	int index = (body->trail_start + body->trail_count) % TRAIL_MAX;
 
@@ -81,4 +88,3 @@ void time_step(Body bodies[], int bodycount, float dt) {
 		update_body_velocity(&bodies[i], initial_acc[i], dt);
 	}
 }
-

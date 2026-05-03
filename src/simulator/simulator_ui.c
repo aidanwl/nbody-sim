@@ -6,15 +6,33 @@
 
 static void simulator_draw_options(Simulator *sim) {
     Rectangle panel = layout_anchor(220, 170, LAYOUT_TOP_RIGHT, 20, 120);
+    const char *path_label = "Paths: Off";
+
+    switch (sim->path_mode) {
+        case PATH_MODE_SHORT:
+            path_label = "Paths: Short";
+            break;
+        case PATH_MODE_LONG:
+            path_label = "Paths: Long";
+            break;
+        case PATH_MODE_ORBIT:
+            path_label = "Paths: Orbit";
+            break;
+        case PATH_MODE_OFF:
+        default:
+            path_label = "Paths: Off";
+            break;
+    }
 
     DrawRectangleLines(panel.x, panel.y, panel.width, panel.height, WHITE);
     DrawText("Options", panel.x + 10, panel.y + 10, 20, WHITE);
 
-    sim->show_paths = widget_toggle(
+    if (widget_button(
         layout_relative(panel, 0.05f, 0.30f, 0.90f, 0.18f),
-        "Show Paths",
-        sim->show_paths
-    );
+        path_label
+    )) {
+        sim->path_mode = (PathMode)((sim->path_mode + 1) % 4);
+    }
 
     sim->show_current_trajectory = widget_toggle(
         layout_relative(panel, 0.05f, 0.55f, 0.90f, 0.18f),

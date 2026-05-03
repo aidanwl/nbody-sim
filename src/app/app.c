@@ -22,7 +22,8 @@ static void app_init_bodies(App *app) {
         .force = {0.0f, 0.0f},
         .color = WHITE,
         .trail_count = 0,
-        .trail_start = 0
+        .trail_start = 0,
+        .trail_sample_counter = 0
     };
 
     app->bodies[1] = (Body){
@@ -33,7 +34,8 @@ static void app_init_bodies(App *app) {
         .force = {0.0f, 0.0f},
         .color = WHITE,
         .trail_count = 0,
-        .trail_start = 0
+        .trail_start = 0,
+        .trail_sample_counter = 0
     };
 
     app->bodies[2] = (Body){
@@ -44,7 +46,8 @@ static void app_init_bodies(App *app) {
         .force = {0.0f, 0.0f},
         .color = WHITE,
         .trail_count = 0,
-        .trail_start = 0
+        .trail_start = 0,
+        .trail_sample_counter = 0
     };
 
     app->bodies[3] = (Body){
@@ -55,7 +58,8 @@ static void app_init_bodies(App *app) {
         .force = {0.0f, 0.0f},
         .color = WHITE,
         .trail_count = 0,
-        .trail_start = 0
+        .trail_start = 0,
+        .trail_sample_counter = 0
     };
 }
 

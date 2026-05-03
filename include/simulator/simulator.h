@@ -5,10 +5,17 @@
 #include "raylib.h"
 #include "core/body.h"
 
+typedef enum {
+    PATH_MODE_OFF,
+    PATH_MODE_SHORT,
+    PATH_MODE_LONG,
+    PATH_MODE_ORBIT
+} PathMode;
+
 typedef struct {
     float zoom;
 
-    bool show_paths;
+    PathMode path_mode;
     bool show_current_trajectory;
 
     bool speed_slider_open;

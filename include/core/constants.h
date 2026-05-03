@@ -5,7 +5,8 @@
 
 #define EPSILON 1e-9f
 
-#define TRAIL_MAX 5000
+#define TRAIL_MAX 12000
+#define TRAIL_SAMPLE_INTERVAL 16
 
 
 #endif

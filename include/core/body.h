@@ -15,6 +15,7 @@ typedef struct {
     Vector2 trail[TRAIL_MAX];
     int trail_count;
     int trail_start; 
+    int trail_sample_counter;
 
 } Body;
 
