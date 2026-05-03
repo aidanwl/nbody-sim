@@ -47,7 +47,7 @@ static int simulator_path_point_limit(PathMode mode) {
     }
 }
 
-static void simulator_draw_trail(const Simulator *sim, const Body *body) {
+static void simulator_draw_trail(const Simulator *sim, const Body *body, Color color) {
     int point_limit = simulator_path_point_limit(sim->path_mode);
 
     if (point_limit <= 0) {
@@ -77,7 +77,7 @@ static void simulator_draw_trail(const Simulator *sim, const Body *body) {
         Vector2 p1 = world_to_screen(sim, body->trail[a]);
         Vector2 p2 = world_to_screen(sim, body->trail[b]);
 
-        DrawLineEx(p1, p2, 2.0f, body->color);
+        DrawLineEx(p1, p2, 2.0f, color);
     }
 }
 
@@ -94,7 +94,7 @@ static void simulator_draw_velocity(const Simulator *sim, const Body *body) {
 static void simulator_draw_bodies(const Simulator *sim, Body bodies[], int body_count) {
     for (int i = 0; i < body_count; i++) {
         Vector2 screen_pos = world_to_screen(sim, bodies[i].position);
-        Color color = (i == sim->locked_body_index) ? YELLOW : bodies[i].color;
+        Color color = (i == sim->locked_body_index) ? WHITE : bodies[i].color;
 
         render_body(screen_pos, 5.0f * sim->zoom, color);
     }
@@ -178,6 +178,7 @@ void simulator_init(Simulator *sim) {
     sim->input_blocked = false;
     sim->locked_body_index = -1;
     sim->named_body_index = -1;
+    sim->delete_body_index = -1;
 }
 
 void simulator_update(Simulator *sim, float frame_dt) {
@@ -191,7 +192,9 @@ void simulator_draw(Simulator *sim, Body bodies[], int body_count, float *sim_sp
     if (sim->path_mode != PATH_MODE_OFF || sim->show_current_trajectory) {
         for (int i = 0; i < body_count; i++) {
             if (sim->path_mode != PATH_MODE_OFF) {
-                simulator_draw_trail(sim, &bodies[i]);
+                Color color = (i == sim->locked_body_index) ? WHITE : bodies[i].color;
+
+                simulator_draw_trail(sim, &bodies[i], color);
             }   
             if (sim->show_current_trajectory) {
                 simulator_draw_velocity(sim, &bodies[i]);

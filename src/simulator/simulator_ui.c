@@ -106,26 +106,36 @@ static void simulator_draw_body_lock_menu(Simulator *sim, Body bodies[], int bod
     }
 
     float panel_height = 50.0f + body_count * 34.0f;
-    Rectangle panel = layout_anchor(240, panel_height, LAYOUT_TOP_LEFT, 170, 70);
+    Rectangle panel = layout_anchor(240, panel_height, LAYOUT_TOP_LEFT, 170, 20);
 
     DrawRectangleRec(panel, (Color){30, 30, 30, 230});
     DrawRectangleLinesEx(panel, 2.0f, WHITE);
     DrawText("Bodies", (int)(panel.x + 10), (int)(panel.y + 10), 20, WHITE);
 
     for (int i = 0; i < body_count; i++) {
-        Rectangle button = {
+        Rectangle lock_button = {
             panel.x + 10.0f,
             panel.y + 40.0f + i * 34.0f,
-            panel.width - 20.0f,
+            panel.width - 64.0f,
             28.0f
+        };
+        Rectangle delete_button = {
+            panel.x + panel.width - 48.0f,
+            lock_button.y,
+            38.0f,
+            lock_button.height
         };
         const char *label = TextFormat("%s  m=%.1f", bodies[i].name, bodies[i].mass);
 
-        if (widget_button(button, label)) {
+        if (widget_button(lock_button, label)) {
             sim->locked_body_index = i;
             sim->camera_focus = bodies[i].position;
             sim->camera_pan = (Vector2){0.0f, 0.0f};
             sim->body_menu_open = false;
+        }
+
+        if (widget_button(delete_button, "Del")) {
+            sim->delete_body_index = i;
         }
     }
 }

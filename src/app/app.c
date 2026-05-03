@@ -11,6 +11,30 @@
 
 static Simulator simulator;
 
+static void app_delete_body(App *app, int index) {
+    if (index < 0 || index >= app->body_count) {
+        return;
+    }
+
+    for (int i = index; i < app->body_count - 1; i++) {
+        app->bodies[i] = app->bodies[i + 1];
+    }
+
+    app->body_count--;
+
+    if (simulator.locked_body_index == index) {
+        simulator.locked_body_index = -1;
+    } else if (simulator.locked_body_index > index) {
+        simulator.locked_body_index--;
+    }
+
+    if (simulator.named_body_index == index) {
+        simulator.named_body_index = -1;
+    } else if (simulator.named_body_index > index) {
+        simulator.named_body_index--;
+    }
+}
+
 static void app_init_bodies(App *app) {
     app->body_count = 4;
 
@@ -71,6 +95,10 @@ static void app_update_simulation(App *app) {
         return;
     }
 
+    if (app->body_count <= 0) {
+        return;
+    }
+
     accumulator += app->dt * app->sim_speed;
 
     while (accumulator >= fixed_dt) {
@@ -110,6 +138,11 @@ void app_draw(App *app) {
         &app->sim_speed,
         &app->paused
     );
+    if (simulator.delete_body_index >= 0) {
+        app_delete_body(app, simulator.delete_body_index);
+        simulator.delete_body_index = -1;
+    }
+
     body_creator_draw_preview(&app->creator);
 
     if (widget_button((Rectangle){20, 220, 140, 40}, "New Body")) {

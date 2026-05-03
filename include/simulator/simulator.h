@@ -23,6 +23,7 @@ typedef struct {
     bool input_blocked;
     int locked_body_index;
     int named_body_index;
+    int delete_body_index;
 
     Vector2 camera_focus;
     
