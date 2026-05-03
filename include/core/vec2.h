@@ -9,8 +9,4 @@ Vector2 vec2_vadd(Vector2 a, Vector2 b);
 Vector2 vec2_vsub(Vector2 a, Vector2 b);
 Vector2 vec2_vscale(Vector2 v, float s);
 
-// ---------- Scalar Return ------------------------
-
-float vec2_snorm(Vector2 v);
-
 #endif

@@ -45,6 +45,8 @@ static void simulator_draw_speed_control(Simulator *sim, float *sim_speed) {
     Rectangle button = layout_anchor(86, 34, LAYOUT_BOTTOM_RIGHT, 20, 20);
     Rectangle presets = layout_anchor(230, 30, LAYOUT_BOTTOM_RIGHT, 116, 22);
     Rectangle slider_panel = layout_anchor(230, 74, LAYOUT_BOTTOM_RIGHT, 20, 62);
+    const float preset_values[] = {0.5f, 1.0f, 2.0f, 5.0f, 20.0f};
+    const char *preset_labels[] = {"x.5", "x1", "x2", "x5", "x20"};
 
     if (widget_button(button, "Speed")) {
         sim->speed_slider_open = !sim->speed_slider_open;
@@ -63,23 +65,16 @@ static void simulator_draw_speed_control(Simulator *sim, float *sim_speed) {
         );
     }
 
-    float w = 0.18f;
-    float gap = 0.025f;
+    const float w = 0.18f;
+    const float gap = 0.025f;
+    const int preset_count = (int)(sizeof(preset_values) / sizeof(preset_values[0]));
 
-    if (widget_button(layout_relative(presets, 0.00f + 0 * (w + gap), 0.0f, w, 1.0f), "x.5")) {
-        *sim_speed = 0.5f;
-    }
-    if (widget_button(layout_relative(presets, 0.00f + 1 * (w + gap), 0.0f, w, 1.0f), "x1")) {
-        *sim_speed = 1.0f;
-    }
-    if (widget_button(layout_relative(presets, 0.00f + 2 * (w + gap), 0.0f, w, 1.0f), "x2")) {
-        *sim_speed = 2.0f;
-    }
-    if (widget_button(layout_relative(presets, 0.00f + 3 * (w + gap), 0.0f, w, 1.0f), "x5")) {
-        *sim_speed = 5.0f;
-    }
-    if (widget_button(layout_relative(presets, 0.00f + 4 * (w + gap), 0.0f, w, 1.0f), "x20")) {
-        *sim_speed = 20.0f;
+    for (int i = 0; i < preset_count; i++) {
+        Rectangle preset_button = layout_relative(presets, i * (w + gap), 0.0f, w, 1.0f);
+
+        if (widget_button(preset_button, preset_labels[i])) {
+            *sim_speed = preset_values[i];
+        }
     }
 }
 

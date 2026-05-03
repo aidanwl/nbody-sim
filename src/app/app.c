@@ -1,13 +1,13 @@
 #include "app/app.h"
 
+#include <stdio.h>
+
 #include "raylib.h"
 
 #include "core/simulation.h"
 #include "editor/body_creator.h"
 #include "simulator/simulator.h"
 #include "core/widget.h"
-
-// Temporary testing ground
 
 static Simulator simulator;
 
@@ -20,7 +20,7 @@ static void app_init_bodies(App *app) {
         .position = {350.0f, 300.0f},
         .velocity = {0.0f, -1.15f},
         .force = {0.0f, 0.0f},
-        .color = WHITE,
+        .color = GOLD,
         .trail_count = 0,
         .trail_start = 0,
         .trail_sample_counter = 0
@@ -32,7 +32,7 @@ static void app_init_bodies(App *app) {
         .position = {450.0f, 300.0f},
         .velocity = {0.0f, 1.15f},
         .force = {0.0f, 0.0f},
-        .color = WHITE,
+        .color = SKYBLUE,
         .trail_count = 0,
         .trail_start = 0,
         .trail_sample_counter = 0
@@ -44,7 +44,7 @@ static void app_init_bodies(App *app) {
         .position = {400.0f, 210.0f},
         .velocity = {2.7f, 0.0f},
         .force = {0.0f, 0.0f},
-        .color = WHITE,
+        .color = GREEN,
         .trail_count = 0,
         .trail_start = 0,
         .trail_sample_counter = 0
@@ -56,7 +56,7 @@ static void app_init_bodies(App *app) {
         .position = {400.0f, 470.0f},
         .velocity = {-2.0f, 0.0f},
         .force = {0.0f, 0.0f},
-        .color = WHITE,
+        .color = ORANGE,
         .trail_count = 0,
         .trail_start = 0,
         .trail_sample_counter = 0
@@ -118,9 +118,19 @@ void app_draw(App *app) {
 
     if (body_creator_draw(&app->creator, app->screen_width, app->screen_height)) {
         if (app->body_count < MAX_BODIES) {
-            Body new_body = app->creator.draft;
+            BodyDraft *draft = &app->creator.draft;
+            Body new_body = {
+                .mass = draft->mass,
+                .position = simulator_screen_to_world(&simulator, draft->position),
+                .velocity = draft->velocity,
+                .force = {0.0f, 0.0f},
+                .color = draft->color,
+                .trail_count = 0,
+                .trail_start = 0,
+                .trail_sample_counter = 0
+            };
 
-            new_body.position = simulator_screen_to_world(&simulator, new_body.position);
+            snprintf(new_body.name, sizeof(new_body.name), "%s", draft->name);
             app->bodies[app->body_count] = new_body;
             app->body_count++;
         }

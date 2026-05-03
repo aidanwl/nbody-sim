@@ -16,10 +16,38 @@ enum {
     BODY_CREATOR_INPUT_VELOCITY_Y
 };
 
+typedef struct {
+    Rectangle panel;
+    Rectangle name_input;
+    Rectangle mass_input;
+    Rectangle velocity_x_input;
+    Rectangle velocity_y_input;
+} BodyCreatorLayout;
+
 static float clampf(float x, float min, float max) {
     if (x < min) return min;
     if (x > max) return max;
     return x;
+}
+
+static bool text_has_char(const char *text, char target) {
+    return strchr(text, target) != NULL;
+}
+
+static bool numeric_key_allowed(char key, const char *buffer, int len) {
+    if (key >= '0' && key <= '9') {
+        return true;
+    }
+
+    if (key == '-' && len == 0) {
+        return true;
+    }
+
+    if (key == '.' && !text_has_char(buffer, '.')) {
+        return true;
+    }
+
+    return false;
 }
 
 static void body_creator_sync_text(BodyCreator *creator) {
@@ -34,11 +62,7 @@ static void body_creator_reset_draft(BodyCreator *creator, int screen_width, int
     creator->draft.mass = 10.0f;
     creator->draft.position = (Vector2){screen_width * 0.5f, screen_height * 0.5f};
     creator->draft.velocity = (Vector2){0.0f, 0.0f};
-    creator->draft.force = (Vector2){0.0f, 0.0f};
     creator->draft.color = GREEN;
-    creator->draft.trail_count = 0;
-    creator->draft.trail_start = 0;
-    creator->draft.trail_sample_counter = 0;
     creator->active_input = BODY_CREATOR_INPUT_NONE;
     body_creator_sync_text(creator);
 }
@@ -68,7 +92,7 @@ static void draw_text_input(Rectangle bounds, const char *label, char *buffer, i
         bool allowed = key >= 32 && key <= 126;
 
         if (numeric_only) {
-            allowed = (key >= '0' && key <= '9') || key == '-' || key == '.';
+            allowed = numeric_key_allowed((char)key, buffer, len);
         }
 
         if (allowed && len < buffer_size - 1) {
@@ -103,6 +127,10 @@ static Color color_with_alpha(Color color, unsigned char alpha) {
     return color;
 }
 
+static bool rect_contains_mouse(Rectangle bounds) {
+    return CheckCollisionPointRec(GetMousePosition(), bounds);
+}
+
 static void draw_color_swatch(BodyCreator *creator, Rectangle bounds, Color color) {
     bool selected = creator->draft.color.r == color.r &&
                     creator->draft.color.g == color.g &&
@@ -120,7 +148,8 @@ static Rectangle body_creator_panel_bounds(int screen_width, int screen_height) 
     float margin = 20.0f;
     float top = 270.0f;
     float width = screen_width * 0.42f;
-    float height = screen_height - top - margin;
+    float available_height = screen_height - top - margin;
+    float height = available_height;
 
     if (width < 360.0f) {
         width = 360.0f;
@@ -129,8 +158,14 @@ static Rectangle body_creator_panel_bounds(int screen_width, int screen_height) 
         width = 460.0f;
     }
 
-    if (height < 420.0f) {
+    if (height > 480.0f) {
+        height = 480.0f;
+    }
+    if (height < 420.0f && available_height >= 420.0f) {
         height = 420.0f;
+    }
+    if (height < 320.0f) {
+        height = available_height;
     }
 
     return (Rectangle){margin, top, width, height};
@@ -143,6 +178,124 @@ static Rectangle panel_rect(Rectangle panel, float x, float y, float width, floa
         panel.width * width,
         panel.height * height
     };
+}
+
+static BodyCreatorLayout body_creator_layout(int screen_width, int screen_height) {
+    BodyCreatorLayout layout = {0};
+
+    layout.panel = body_creator_panel_bounds(screen_width, screen_height);
+    layout.name_input = panel_rect(layout.panel, 0.06f, 0.14f, 0.58f, 0.075f);
+    layout.mass_input = panel_rect(layout.panel, 0.06f, 0.30f, 0.30f, 0.075f);
+    layout.velocity_x_input = panel_rect(layout.panel, 0.06f, 0.48f, 0.30f, 0.075f);
+    layout.velocity_y_input = panel_rect(layout.panel, 0.06f, 0.66f, 0.30f, 0.075f);
+
+    return layout;
+}
+
+static bool body_creator_handle_placement(BodyCreator *creator) {
+    if (!creator->placing) {
+        return false;
+    }
+
+    if (creator->wait_for_release) {
+        if (!IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+            creator->wait_for_release = false;
+        }
+        return true;
+    }
+
+    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        creator->draft.position = GetMousePosition();
+        creator->placing = false;
+        creator->open = true;
+    }
+
+    if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON) || IsKeyPressed(KEY_ESCAPE)) {
+        creator->placing = false;
+    }
+
+    return true;
+}
+
+static void body_creator_clear_input_on_outside_click(BodyCreator *creator, Rectangle inputs[], int input_count) {
+    if (!IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        return;
+    }
+
+    for (int i = 0; i < input_count; i++) {
+        if (rect_contains_mouse(inputs[i])) {
+            return;
+        }
+    }
+
+    creator->active_input = BODY_CREATOR_INPUT_NONE;
+}
+
+static void body_creator_draw_header(BodyCreator *creator, Rectangle panel, float label_x) {
+    DrawRectangleRec(panel, (Color){30, 30, 30, 235});
+    DrawRectangleLinesEx(panel, 2.0f, WHITE);
+    DrawText("Create Body", (int)label_x, (int)(panel.y + 12), 24, WHITE);
+
+    Rectangle center_button = {
+        label_x + (float)MeasureText("Create Body", 24) + 14.0f,
+        panel.y + 10.0f,
+        30.0f,
+        30.0f
+    };
+
+    if (creator->center_icon.id != 0 && widget_image_button(center_button, creator->center_icon)) {
+        creator->center_requested = true;
+    }
+}
+
+static void body_creator_draw_fields(BodyCreator *creator, BodyCreatorLayout layout) {
+    draw_text_input(layout.name_input, "Name", creator->name_text, sizeof(creator->name_text), BODY_CREATOR_INPUT_NAME, false, creator);
+    snprintf(creator->draft.name, sizeof(creator->draft.name), "%s", creator->name_text[0] == '\0' ? "Unnamed" : creator->name_text);
+
+    draw_text_input(layout.mass_input, "Mass", creator->mass_text, sizeof(creator->mass_text), BODY_CREATOR_INPUT_MASS, true, creator);
+    creator->draft.mass = parse_float_input(creator->mass_text, creator->draft.mass, 1.0f, 1000.0f);
+    creator->draft.mass = widget_slider(panel_rect(layout.panel, 0.43f, 0.335f, 0.38f, 0.045f), 1.0f, 1000.0f, creator->draft.mass, "Mass");
+    if (creator->active_input != BODY_CREATOR_INPUT_MASS && IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+        body_creator_sync_text(creator);
+    }
+
+    draw_text_input(layout.velocity_x_input, "Velocity X", creator->velocity_x_text, sizeof(creator->velocity_x_text), BODY_CREATOR_INPUT_VELOCITY_X, true, creator);
+    creator->draft.velocity.x = parse_float_input(creator->velocity_x_text, creator->draft.velocity.x, -20.0f, 20.0f);
+    creator->draft.velocity.x = widget_slider(panel_rect(layout.panel, 0.43f, 0.515f, 0.38f, 0.045f), -20.0f, 20.0f, creator->draft.velocity.x, "Velocity X");
+
+    draw_text_input(layout.velocity_y_input, "Velocity Y", creator->velocity_y_text, sizeof(creator->velocity_y_text), BODY_CREATOR_INPUT_VELOCITY_Y, true, creator);
+    creator->draft.velocity.y = parse_float_input(creator->velocity_y_text, creator->draft.velocity.y, -20.0f, 20.0f);
+    creator->draft.velocity.y = widget_slider(panel_rect(layout.panel, 0.43f, 0.695f, 0.38f, 0.045f), -20.0f, 20.0f, creator->draft.velocity.y, "Velocity Y");
+
+    if (creator->active_input == BODY_CREATOR_INPUT_NONE && IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+        body_creator_sync_text(creator);
+    }
+}
+
+static void body_creator_draw_color_picker(BodyCreator *creator, Rectangle panel, float label_x) {
+    DrawText("Color", (int)label_x, (int)(panel.y + panel.height * 0.82f), 18, WHITE);
+    draw_color_swatch(creator, panel_rect(panel, 0.06f, 0.88f, 0.08f, 0.07f), GREEN);
+    draw_color_swatch(creator, panel_rect(panel, 0.17f, 0.88f, 0.08f, 0.07f), SKYBLUE);
+    draw_color_swatch(creator, panel_rect(panel, 0.28f, 0.88f, 0.08f, 0.07f), ORANGE);
+    draw_color_swatch(creator, panel_rect(panel, 0.39f, 0.88f, 0.08f, 0.07f), PINK);
+    draw_color_swatch(creator, panel_rect(panel, 0.50f, 0.88f, 0.08f, 0.07f), VIOLET);
+}
+
+static bool body_creator_draw_actions(BodyCreator *creator, Rectangle panel) {
+    if (widget_button(panel_rect(panel, 0.68f, 0.12f, 0.25f, 0.085f), "Create")) {
+        creator->open = false;
+        creator->placing = false;
+        creator->active_input = BODY_CREATOR_INPUT_NONE;
+        return true;
+    }
+
+    if (widget_button(panel_rect(panel, 0.68f, 0.23f, 0.25f, 0.085f), "Cancel")) {
+        creator->open = false;
+        creator->placing = false;
+        creator->active_input = BODY_CREATOR_INPUT_NONE;
+    }
+
+    return false;
 }
 
 void body_creator_init(BodyCreator *creator, int screen_width, int screen_height) {
@@ -168,27 +321,7 @@ void body_creator_start(BodyCreator *creator, int screen_width, int screen_heigh
 }
 
 bool body_creator_draw(BodyCreator *creator, int screen_width, int screen_height) {
-    if (creator->placing) {
-        (void)screen_width;
-        (void)screen_height;
-
-        if (creator->wait_for_release) {
-            if (!IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
-                creator->wait_for_release = false;
-            }
-            return false;
-        }
-
-        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-            creator->draft.position = GetMousePosition();
-            creator->placing = false;
-            creator->open = true;
-        }
-
-        if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON) || IsKeyPressed(KEY_ESCAPE)) {
-            creator->placing = false;
-        }
-
+    if (body_creator_handle_placement(creator)) {
         return false;
     }
 
@@ -196,67 +329,16 @@ bool body_creator_draw(BodyCreator *creator, int screen_width, int screen_height
         return false;
     }
 
-    Rectangle panel = body_creator_panel_bounds(screen_width, screen_height);
+    BodyCreatorLayout layout = body_creator_layout(screen_width, screen_height);
+    Rectangle panel = layout.panel;
     float label_x = panel.x + 20.0f;
+    Rectangle inputs[] = {layout.name_input, layout.mass_input, layout.velocity_x_input, layout.velocity_y_input};
 
-    DrawRectangleRec(panel, (Color){30, 30, 30, 235});
-    DrawRectangleLinesEx(panel, 2.0f, WHITE);
-    DrawText("Create Body", (int)label_x, (int)(panel.y + 12), 24, WHITE);
-
-    Rectangle center_button = {
-        label_x + (float)MeasureText("Create Body", 24) + 14.0f,
-        panel.y + 10.0f,
-        30.0f,
-        30.0f
-    };
-
-    if (creator->center_icon.id != 0 && widget_image_button(center_button, creator->center_icon)) {
-        creator->center_requested = true;
-    }
-
-    draw_text_input(panel_rect(panel, 0.06f, 0.14f, 0.58f, 0.075f), "Name", creator->name_text, sizeof(creator->name_text), BODY_CREATOR_INPUT_NAME, false, creator);
-    snprintf(creator->draft.name, sizeof(creator->draft.name), "%s", creator->name_text[0] == '\0' ? "Unnamed" : creator->name_text);
-
-    draw_text_input(panel_rect(panel, 0.06f, 0.30f, 0.30f, 0.075f), "Mass", creator->mass_text, sizeof(creator->mass_text), BODY_CREATOR_INPUT_MASS, true, creator);
-    creator->draft.mass = parse_float_input(creator->mass_text, creator->draft.mass, 1.0f, 1000.0f);
-    creator->draft.mass = widget_slider(panel_rect(panel, 0.43f, 0.335f, 0.38f, 0.045f), 1.0f, 1000.0f, creator->draft.mass, "Mass");
-    if (creator->active_input != BODY_CREATOR_INPUT_MASS && IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
-        body_creator_sync_text(creator);
-    }
-
-    draw_text_input(panel_rect(panel, 0.06f, 0.48f, 0.30f, 0.075f), "Velocity X", creator->velocity_x_text, sizeof(creator->velocity_x_text), BODY_CREATOR_INPUT_VELOCITY_X, true, creator);
-    creator->draft.velocity.x = parse_float_input(creator->velocity_x_text, creator->draft.velocity.x, -20.0f, 20.0f);
-    creator->draft.velocity.x = widget_slider(panel_rect(panel, 0.43f, 0.515f, 0.38f, 0.045f), -20.0f, 20.0f, creator->draft.velocity.x, "Velocity X");
-
-    draw_text_input(panel_rect(panel, 0.06f, 0.66f, 0.30f, 0.075f), "Velocity Y", creator->velocity_y_text, sizeof(creator->velocity_y_text), BODY_CREATOR_INPUT_VELOCITY_Y, true, creator);
-    creator->draft.velocity.y = parse_float_input(creator->velocity_y_text, creator->draft.velocity.y, -20.0f, 20.0f);
-    creator->draft.velocity.y = widget_slider(panel_rect(panel, 0.43f, 0.695f, 0.38f, 0.045f), -20.0f, 20.0f, creator->draft.velocity.y, "Velocity Y");
-
-    if (creator->active_input == BODY_CREATOR_INPUT_NONE && IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
-        body_creator_sync_text(creator);
-    }
-
-    DrawText("Color", (int)label_x, (int)(panel.y + panel.height * 0.82f), 18, WHITE);
-    draw_color_swatch(creator, panel_rect(panel, 0.06f, 0.88f, 0.08f, 0.07f), GREEN);
-    draw_color_swatch(creator, panel_rect(panel, 0.17f, 0.88f, 0.08f, 0.07f), SKYBLUE);
-    draw_color_swatch(creator, panel_rect(panel, 0.28f, 0.88f, 0.08f, 0.07f), ORANGE);
-    draw_color_swatch(creator, panel_rect(panel, 0.39f, 0.88f, 0.08f, 0.07f), PINK);
-    draw_color_swatch(creator, panel_rect(panel, 0.50f, 0.88f, 0.08f, 0.07f), VIOLET);
-
-    if (widget_button(panel_rect(panel, 0.68f, 0.12f, 0.25f, 0.085f), "Create")) {
-        creator->open = false;
-        creator->placing = false;
-        creator->active_input = BODY_CREATOR_INPUT_NONE;
-        return true;
-    }
-
-    if (widget_button(panel_rect(panel, 0.68f, 0.23f, 0.25f, 0.085f), "Cancel")) {
-        creator->open = false;
-        creator->placing = false;
-        creator->active_input = BODY_CREATOR_INPUT_NONE;
-    }
-
-    return false;
+    body_creator_clear_input_on_outside_click(creator, inputs, 4);
+    body_creator_draw_header(creator, panel, label_x);
+    body_creator_draw_fields(creator, layout);
+    body_creator_draw_color_picker(creator, panel, label_x);
+    return body_creator_draw_actions(creator, panel);
 }
 
 void body_creator_draw_preview(const BodyCreator *creator) {

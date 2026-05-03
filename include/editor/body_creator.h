@@ -5,13 +5,21 @@
 #include "core/body.h"
 
 typedef struct {
+    char name[32];
+    float mass;
+    Vector2 position;
+    Vector2 velocity;
+    Color color;
+} BodyDraft;
+
+typedef struct {
     bool open;
     bool placing;
     bool wait_for_release;
     bool center_requested;
     int active_input;
     Texture2D center_icon;
-    Body draft;
+    BodyDraft draft;
     char name_text[32];
     char mass_text[32];
     char velocity_x_text[32];

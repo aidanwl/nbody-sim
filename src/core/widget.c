@@ -1,4 +1,5 @@
 #include "core/widget.h"
+#include <stdio.h>
 
 // ----------------- Button ----------------------------
 
@@ -69,6 +70,8 @@ static float clampf(float x, float min, float max) {
 }
 
 float widget_slider(Rectangle bounds, float min, float max, float value, const char *label) {
+    static bool has_active_slider = false;
+    static Rectangle active_slider = {0};
     Vector2 mouse = GetMousePosition();
 
     Rectangle track = {
@@ -90,7 +93,22 @@ float widget_slider(Rectangle bounds, float min, float max, float value, const c
     };
 
     bool hovered = CheckCollisionPointRec(mouse, bounds);
-    bool dragging = hovered && IsMouseButtonDown(MOUSE_LEFT_BUTTON);
+
+    if (hovered && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        has_active_slider = true;
+        active_slider = bounds;
+    }
+
+    if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+        has_active_slider = false;
+    }
+
+    bool dragging = has_active_slider &&
+                    active_slider.x == bounds.x &&
+                    active_slider.y == bounds.y &&
+                    active_slider.width == bounds.width &&
+                    active_slider.height == bounds.height &&
+                    IsMouseButtonDown(MOUSE_LEFT_BUTTON);
 
     if (dragging) {
         float new_t = (mouse.x - bounds.x) / bounds.width;
@@ -112,11 +130,6 @@ float widget_slider(Rectangle bounds, float min, float max, float value, const c
     DrawText(value_text, (int)(bounds.x + bounds.width + 12), (int)(bounds.y + 2), 20, WHITE);
 
     return value;
-}
-
-// ----------------- Label ----------------------------
-void widget_label(int x, int y, const char *text, int font_size, Color color) {
-    DrawText(text, x, y, font_size, color);
 }
 
 // ----------------- Origin Button ----------------------------

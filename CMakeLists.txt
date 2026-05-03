@@ -36,6 +36,8 @@ add_executable(nbody
     src/simulator/simulator_camera.c
 )
 
+target_compile_options(nbody PRIVATE -Wall -Wextra -Wpedantic)
+
 target_include_directories(nbody PRIVATE include)
 
 target_link_libraries(nbody PRIVATE raylib)

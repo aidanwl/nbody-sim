@@ -26,7 +26,7 @@ void simulator_update_camera(Simulator *sim, float frame_dt) {
         }
     }
 
-    float wheel = GetMouseWheelMove();
+    float wheel = sim->input_blocked ? 0.0f : GetMouseWheelMove();
 
     if (wheel > 0.0f) {
         sim->zoom *= (1.0f + zoom_speed * frame_dt);
