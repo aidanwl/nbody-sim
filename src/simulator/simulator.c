@@ -15,6 +15,39 @@ static Vector2 world_to_screen(const Simulator *sim, Vector2 world_pos) {
     return vec2_vadd(vec2_vadd(screen_center, scaled), sim->camera_pan);
 }
 
+
+static void simulator_draw_trail(const Simulator *sim, const Body *body) {
+    int step = 1;
+
+    if (body->trail_count > 2000) {
+        step = 8;
+    } else if (body->trail_count > 1000) {
+        step = 4;
+    } else if (body->trail_count > 500) {
+        step = 2;
+    }
+
+    for (int i = step; i < body->trail_count; i += step) {
+        int a = (body->trail_start + i - step) % TRAIL_MAX;
+        int b = (body->trail_start + i) % TRAIL_MAX;
+
+        Vector2 p1 = world_to_screen(sim, body->trail[a]);
+        Vector2 p2 = world_to_screen(sim, body->trail[b]);
+
+        DrawLineEx(p1, p2, 2.0f, WHITE);
+    }
+}
+
+static void simulator_draw_velocity(const Simulator *sim, const Body *body) {
+    Vector2 start = world_to_screen(sim, body->position);
+
+    float scale = 20.0f;
+    Vector2 end_world = vec2_vadd(body->position, vec2_vscale(body->velocity, scale));
+    Vector2 end = world_to_screen(sim, end_world);
+
+    DrawLineEx(start, end, 2.0f, RED);
+}
+
 static void simulator_draw_bodies(const Simulator *sim, Body bodies[], int body_count) {
     for (int i = 0; i < body_count; i++) {
         Vector2 screen_pos = world_to_screen(sim, bodies[i].position);
@@ -44,10 +77,10 @@ void simulator_draw(Simulator *sim, Body bodies[], int body_count, float *sim_sp
     if (sim->show_paths || sim->show_current_trajectory) {
         for (int i = 0; i < body_count; i++) {
             if (sim->show_paths) {
-                render_trail(&bodies[i], sim->zoom, sim->camera_focus, sim->camera_pan);
+                simulator_draw_trail(sim, &bodies[i]);
             }   
             if (sim->show_current_trajectory) {
-                render_velocity(&bodies[i], sim->zoom, sim->camera_focus, sim->camera_pan);
+                simulator_draw_velocity(sim, &bodies[i]);
             }
             
         }

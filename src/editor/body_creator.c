@@ -10,6 +10,8 @@ void body_creator_init(BodyCreator *creator, int screen_width, int screen_height
     creator->draft.position = (Vector2){screen_width * 0.5f, screen_height * 0.5f};
     creator->draft.velocity = (Vector2){0.0f, 0.0f};
     creator->draft.force = (Vector2){0.0f, 0.0f};
+    creator->draft.trail_count = 0;
+    creator->draft.trail_start = 0;
 }
 
 bool body_creator_draw(BodyCreator *creator, int screen_width, int screen_height) {
@@ -17,7 +19,7 @@ bool body_creator_draw(BodyCreator *creator, int screen_width, int screen_height
         return false;
     }
 
-    Rectangle panel = { 500, 20, 260, 320 };
+    Rectangle panel = { 500, 20, 260, 420 };
 
     DrawRectangleRec(panel, (Color){30, 30, 30, 230});
     DrawRectangleLinesEx(panel, 2.0f, WHITE);

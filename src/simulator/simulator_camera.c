@@ -38,5 +38,4 @@ void simulator_update_camera(Simulator *sim, float frame_dt) {
     } else if (sim->zoom > 10.0f) {
         sim->zoom = 10.0f;
     }
-
 }

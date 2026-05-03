@@ -4,11 +4,16 @@
 #include "core/constants.h"
 
 Vector2 gravitational_force(const Body *a, const Body *b) {
-	
-	Vector2 r = vec2_vsub(b->position, a->position);
-	float r_mag = vec2_snorm(r);
-	return vec2_vscale(r, (G * a->mass * b->mass) / pow((pow(r_mag, 2) + pow(EPSILON, 2)), 1.5));
+    Vector2 r = vec2_vsub(b->position, a->position);
+
+    float dist_sq = r.x * r.x + r.y * r.y + EPSILON * EPSILON;
+    float inv_dist = 1.0f / sqrtf(dist_sq);
+    float inv_dist_cubed = inv_dist * inv_dist * inv_dist;
+    float force_scale = G * a->mass * b->mass * inv_dist_cubed;
+
+    return vec2_vscale(r, force_scale);
 }
+
 
 void update_body_position(Body *b, float dt) {
 

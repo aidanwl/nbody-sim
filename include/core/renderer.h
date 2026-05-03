@@ -6,7 +6,5 @@
 #include "core/vec2.h"
 
 void render_body(Vector2 position, float radius, Color color);
-void render_trail(const Body *body, float zoom, Vector2 camera_focus, Vector2 camera_pan);
-void render_velocity(const Body *body, float zoom, Vector2 camera_focus, Vector2 camera_pan);
 
 #endif

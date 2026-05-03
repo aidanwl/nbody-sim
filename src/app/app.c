@@ -5,6 +5,7 @@
 #include "core/simulation.h"
 #include "editor/body_creator.h"
 #include "simulator/simulator.h"
+#include "core/widget.h"
 
 // Temporary testing ground
 
@@ -96,6 +97,18 @@ void app_draw(App *app) {
         &app->sim_speed,
         &app->paused
     );
+    body_creator_draw_preview(&app->creator);
+
+    if (widget_button((Rectangle){20, 220, 140, 40}, "New Body")) {
+        app->creator.open = true;
+    }
+
+    if (body_creator_draw(&app->creator, app->screen_width, app->screen_height)) {
+        if (app->body_count < MAX_BODIES) {
+            app->bodies[app->body_count] = app->creator.draft;
+            app->body_count++;
+        }
+    }
 }
 
 void app_deinit(App *app) {

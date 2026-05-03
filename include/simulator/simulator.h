@@ -6,7 +6,6 @@
 #include "core/body.h"
 
 typedef struct {
-    Vector2 camera_offset;
     float zoom;
 
     bool show_paths;

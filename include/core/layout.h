@@ -13,6 +13,5 @@ typedef enum {
 
 Rectangle layout_anchor(float width, float height, LayoutAnchor anchor, float margin_x, float margin_y);
 Rectangle layout_relative(Rectangle parent, float x, float y, float width, float height);
-Rectangle layout_rect(float x, float y, float w, float h);
 
 #endif

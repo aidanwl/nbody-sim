@@ -49,15 +49,3 @@ Rectangle layout_relative(Rectangle parent, float x, float y, float width, float
         .height = parent.height * height
     };
 }
-
-Rectangle layout_rect(float x, float y, float w, float h) {
-    float sw = (float)GetScreenWidth();
-    float sh = (float)GetScreenHeight();
-
-    return (Rectangle){
-        x * sw,
-        y * sh,
-        w * sw,
-        h * sh
-    };
-}
