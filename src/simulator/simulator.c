@@ -15,6 +15,23 @@ static Vector2 world_to_screen(const Simulator *sim, Vector2 world_pos) {
     return vec2_vadd(vec2_vadd(screen_center, scaled), sim->camera_pan);
 }
 
+Vector2 simulator_screen_to_world(const Simulator *sim, Vector2 screen_pos) {
+    Vector2 screen_center = {
+        GetScreenWidth() * 0.5f,
+        GetScreenHeight() * 0.5f
+    };
+    Vector2 unpanned = vec2_vsub(vec2_vsub(screen_pos, screen_center), sim->camera_pan);
+    Vector2 relative = vec2_vscale(unpanned, 1.0f / sim->zoom);
+
+    return vec2_vadd(relative, sim->camera_focus);
+}
+
+void simulator_center_on_world(Simulator *sim, Vector2 world_pos) {
+    sim->locked_body_index = -1;
+    sim->camera_focus = world_pos;
+    sim->camera_pan = (Vector2){0.0f, 0.0f};
+}
+
 
 static void simulator_draw_trail(const Simulator *sim, const Body *body) {
     int step = 1;
@@ -51,10 +68,54 @@ static void simulator_draw_velocity(const Simulator *sim, const Body *body) {
 static void simulator_draw_bodies(const Simulator *sim, Body bodies[], int body_count) {
     for (int i = 0; i < body_count; i++) {
         Vector2 screen_pos = world_to_screen(sim, bodies[i].position);
-        Color color = (i == sim->locked_body_index) ? YELLOW : WHITE;
+        Color color = (i == sim->locked_body_index) ? YELLOW : bodies[i].color;
 
         render_body(screen_pos, 5.0f * sim->zoom, color);
     }
+}
+
+static void simulator_update_body_name_selection(Simulator *sim, Body bodies[], int body_count) {
+    if (sim->named_body_index >= body_count) {
+        sim->named_body_index = -1;
+    }
+
+    if (!IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        return;
+    }
+
+    Vector2 mouse = GetMousePosition();
+    int clicked_body = -1;
+
+    for (int i = body_count - 1; i >= 0; i--) {
+        Vector2 screen_pos = world_to_screen(sim, bodies[i].position);
+        float radius = 5.0f * sim->zoom;
+
+        if (CheckCollisionPointCircle(mouse, screen_pos, radius + 4.0f)) {
+            clicked_body = i;
+            break;
+        }
+    }
+
+    sim->named_body_index = clicked_body;
+}
+
+static void simulator_draw_body_name(const Simulator *sim, Body bodies[], int body_count) {
+    if (sim->named_body_index < 0 || sim->named_body_index >= body_count) {
+        return;
+    }
+
+    const Body *body = &bodies[sim->named_body_index];
+    Vector2 screen_pos = world_to_screen(sim, body->position);
+    int font_size = 20;
+    int text_width = MeasureText(body->name, font_size);
+
+    DrawText(
+        body->name,
+        (int)(screen_pos.x - text_width * 0.5f),
+        (int)(screen_pos.y - 34.0f),
+        font_size,
+        body->color
+    );
 }
 
 static void simulator_update_body_lock(Simulator *sim, Body bodies[], int body_count) {
@@ -88,7 +149,9 @@ void simulator_init(Simulator *sim) {
 
     sim->speed_slider_open = false;
     sim->body_menu_open = false;
+    sim->input_blocked = false;
     sim->locked_body_index = -1;
+    sim->named_body_index = -1;
 }
 
 void simulator_update(Simulator *sim, float frame_dt) {
@@ -97,6 +160,7 @@ void simulator_update(Simulator *sim, float frame_dt) {
 
 void simulator_draw(Simulator *sim, Body bodies[], int body_count, float *sim_speed, bool *paused) {
     simulator_update_body_lock(sim, bodies, body_count);
+    simulator_update_body_name_selection(sim, bodies, body_count);
 
     if (sim->show_paths || sim->show_current_trajectory) {
         for (int i = 0; i < body_count; i++) {
@@ -111,6 +175,7 @@ void simulator_draw(Simulator *sim, Body bodies[], int body_count, float *sim_sp
     }
     
     simulator_draw_bodies(sim, bodies, body_count);
+    simulator_draw_body_name(sim, bodies, body_count);
     simulator_draw_controls(sim, bodies, sim_speed, paused, body_count);
 }
 

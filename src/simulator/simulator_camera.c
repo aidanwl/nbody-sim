@@ -6,7 +6,7 @@ void simulator_update_camera(Simulator *sim, float frame_dt) {
     const float pan_speed = 300.0f * frame_dt;
     const float zoom_speed = 1.0f;
 
-    if (sim->locked_body_index < 0) {
+    if (sim->locked_body_index < 0 && !sim->input_blocked) {
         if (IsKeyDown(KEY_W)) {
             sim->camera_pan.y += pan_speed;
         }

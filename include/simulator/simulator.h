@@ -13,7 +13,9 @@ typedef struct {
 
     bool speed_slider_open;
     bool body_menu_open;
+    bool input_blocked;
     int locked_body_index;
+    int named_body_index;
 
     Vector2 camera_focus;
     
@@ -32,5 +34,7 @@ void simulator_draw(Simulator *sim, Body bodies[], int body_count, float *sim_sp
 void simulator_update_camera(Simulator *sim, float frame_dt);
 
 void simulator_draw_controls(Simulator *sim, Body bodies[], float *sim_speed, bool *paused, int body_count);
+Vector2 simulator_screen_to_world(const Simulator *sim, Vector2 screen_pos);
+void simulator_center_on_world(Simulator *sim, Vector2 world_pos);
 
 #endif

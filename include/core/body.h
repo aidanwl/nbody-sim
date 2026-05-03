@@ -5,10 +5,12 @@
 #include "constants.h"
 
 typedef struct {
+    char name[32];
     float mass;
     Vector2 position;
     Vector2 velocity;
     Vector2 force;
+    Color color;
 
     Vector2 trail[TRAIL_MAX];
     int trail_count;

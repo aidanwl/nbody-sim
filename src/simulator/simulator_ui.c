@@ -18,46 +18,49 @@ static void simulator_draw_options(Simulator *sim) {
 
     sim->show_current_trajectory = widget_toggle(
         layout_relative(panel, 0.05f, 0.55f, 0.90f, 0.18f),
-        "Show Current Trajectory",
+        "Velocity Vectors",
         sim->show_current_trajectory
     );
 }
 
 static void simulator_draw_speed_control(Simulator *sim, float *sim_speed) {
-    Rectangle panel = layout_anchor(320, 110, LAYOUT_BOTTOM_RIGHT, 20, 20);
+    Rectangle button = layout_anchor(86, 34, LAYOUT_BOTTOM_RIGHT, 20, 20);
+    Rectangle presets = layout_anchor(230, 30, LAYOUT_BOTTOM_RIGHT, 116, 22);
+    Rectangle slider_panel = layout_anchor(230, 74, LAYOUT_BOTTOM_RIGHT, 20, 62);
 
-    if (widget_button(layout_relative(panel, 0.00f, 0.00f, 0.75f, 0.28f), "Speed Control")) {
+    if (widget_button(button, "Speed")) {
         sim->speed_slider_open = !sim->speed_slider_open;
     }
 
     if (sim->speed_slider_open) {
+        DrawRectangleRec(slider_panel, (Color){30, 30, 30, 220});
+        DrawRectangleLinesEx(slider_panel, 2.0f, WHITE);
+
         *sim_speed = widget_slider(
-            layout_relative(panel, 0.00f, 0.35f, 0.75f, 0.18f),
+            layout_relative(slider_panel, 0.08f, 0.55f, 0.55f, 0.20f),
             0.0f,
             20.0f,
             *sim_speed,
-            "Sim Speed"
+            "Speed"
         );
     }
 
-    float y = 0.70f;
-    float w = 0.14f;
-    float h = 0.27f;
-    float gap = 0.015f;
+    float w = 0.18f;
+    float gap = 0.025f;
 
-    if (widget_button(layout_relative(panel, 0.00f + 0 * (w + gap), y, w, h), "x0.5")) {
+    if (widget_button(layout_relative(presets, 0.00f + 0 * (w + gap), 0.0f, w, 1.0f), "x.5")) {
         *sim_speed = 0.5f;
     }
-    if (widget_button(layout_relative(panel, 0.00f + 1 * (w + gap), y, w, h), "x1")) {
+    if (widget_button(layout_relative(presets, 0.00f + 1 * (w + gap), 0.0f, w, 1.0f), "x1")) {
         *sim_speed = 1.0f;
     }
-    if (widget_button(layout_relative(panel, 0.00f + 2 * (w + gap), y, w, h), "x2")) {
+    if (widget_button(layout_relative(presets, 0.00f + 2 * (w + gap), 0.0f, w, 1.0f), "x2")) {
         *sim_speed = 2.0f;
     }
-    if (widget_button(layout_relative(panel, 0.00f + 3 * (w + gap), y, w, h), "x5")) {
+    if (widget_button(layout_relative(presets, 0.00f + 3 * (w + gap), 0.0f, w, 1.0f), "x5")) {
         *sim_speed = 5.0f;
     }
-    if (widget_button(layout_relative(panel, 0.00f + 4 * (w + gap), y, w, h), "x20")) {
+    if (widget_button(layout_relative(presets, 0.00f + 4 * (w + gap), 0.0f, w, 1.0f), "x20")) {
         *sim_speed = 20.0f;
     }
 }
@@ -103,7 +106,7 @@ static void simulator_draw_body_lock_menu(Simulator *sim, Body bodies[], int bod
             panel.width - 20.0f,
             28.0f
         };
-        const char *label = TextFormat("Body %d  m=%.1f", i + 1, bodies[i].mass);
+        const char *label = TextFormat("%s  m=%.1f", bodies[i].name, bodies[i].mass);
 
         if (widget_button(button, label)) {
             sim->locked_body_index = i;

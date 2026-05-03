@@ -2,8 +2,8 @@
 #include "app/app.h"
 
 int main() {
-    const int screen_width = 800;
-    const int screen_height = 600;
+    const int screen_width = 1100;
+    const int screen_height = 750;
 
     InitWindow(screen_width, screen_height, "NBody Sim");
     SetTargetFPS(60);
