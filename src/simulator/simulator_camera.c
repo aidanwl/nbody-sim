@@ -7,25 +7,22 @@ void simulator_update_camera(Simulator *sim, float frame_dt) {
     const float zoom_speed = 1.0f;
 
     if (IsKeyDown(KEY_W)) {
-        sim->camera_offset.y += pan_speed;
+        sim->camera_pan.y += pan_speed;
     }
     if (IsKeyDown(KEY_S)) {
-        sim->camera_offset.y -= pan_speed;
+        sim->camera_pan.y -= pan_speed;
     }
     if (IsKeyDown(KEY_A)) {
-        sim->camera_offset.x += pan_speed;
+        sim->camera_pan.x += pan_speed;
     }
     if (IsKeyDown(KEY_D)) {
-        sim->camera_offset.x -= pan_speed;
+        sim->camera_pan.x -= pan_speed;
     }
 
     if (IsMouseButtonDown(MOUSE_RIGHT_BUTTON)) {
         Vector2 delta = GetMouseDelta();
-        if (IsMouseButtonDown(MOUSE_RIGHT_BUTTON)) {
-            Vector2 delta = GetMouseDelta();
-            sim->camera_pan = vec2_vadd(sim->camera_pan, delta);
-            sim->camera_user_moved = true;
-        }
+        sim->camera_pan = vec2_vadd(sim->camera_pan, delta);
+        sim->camera_user_moved = true;
     }
 
     float wheel = GetMouseWheelMove();
