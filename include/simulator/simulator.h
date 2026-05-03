@@ -14,6 +14,11 @@ typedef struct {
 
     bool speed_slider_open;
 
+    Vector2 camera_focus;
+    
+    Vector2 camera_pan;
+    bool camera_user_moved;
+
     Texture2D origin_icon;
 } Simulator;
 

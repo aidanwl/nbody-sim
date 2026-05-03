@@ -28,6 +28,7 @@ add_executable(nbody
     src/core/simulation.c
     src/core/renderer.c
     src/core/widget.c
+    src/core/layout.c
     src/app/app.c
     src/editor/body_creator.c
     src/simulator/simulator.c

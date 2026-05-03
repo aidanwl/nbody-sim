@@ -21,7 +21,11 @@ void simulator_update_camera(Simulator *sim, float frame_dt) {
 
     if (IsMouseButtonDown(MOUSE_RIGHT_BUTTON)) {
         Vector2 delta = GetMouseDelta();
-        sim->camera_offset = vec2_vadd(sim->camera_offset, delta);
+        if (IsMouseButtonDown(MOUSE_RIGHT_BUTTON)) {
+            Vector2 delta = GetMouseDelta();
+            sim->camera_pan = vec2_vadd(sim->camera_pan, delta);
+            sim->camera_user_moved = true;
+        }
     }
 
     float wheel = GetMouseWheelMove();

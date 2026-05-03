@@ -4,7 +4,15 @@
 #include "core/widget.h"
 
 static Vector2 world_to_screen(const Simulator *sim, Vector2 world_pos) {
-    return vec2_vadd(vec2_vscale(world_pos, sim->zoom), sim->camera_offset);
+    Vector2 screen_center = {
+        GetScreenWidth() * 0.5f,
+        GetScreenHeight() * 0.5f
+    };
+
+    Vector2 relative = vec2_vsub(world_pos, sim->camera_focus);
+    Vector2 scaled = vec2_vscale(relative, sim->zoom);
+
+    return vec2_vadd(vec2_vadd(screen_center, scaled), sim->camera_pan);
 }
 
 static void simulator_draw_bodies(const Simulator *sim, Body bodies[], int body_count) {
@@ -15,12 +23,14 @@ static void simulator_draw_bodies(const Simulator *sim, Body bodies[], int body_
 }
 
 void simulator_init(Simulator *sim) {
-    sim->camera_offset = (Vector2){0.0f, 0.0f};
+    sim->camera_focus = (Vector2){400.0f, 300.0f};
+    sim->camera_pan = (Vector2){0.0f, 0.0f};
+    sim->camera_user_moved = false;
     sim->zoom = 1.0f;
     sim->origin_icon = LoadTexture("../assets/origin.png");
 
     sim->show_paths = false;
-    // sim->show_current_trajectory = false;
+    sim->show_current_trajectory = false;
 
     sim->speed_slider_open = false;
 }
@@ -34,10 +44,10 @@ void simulator_draw(Simulator *sim, Body bodies[], int body_count, float *sim_sp
     if (sim->show_paths || sim->show_current_trajectory) {
         for (int i = 0; i < body_count; i++) {
             if (sim->show_paths) {
-                render_trail(&bodies[i], sim->zoom, sim->camera_offset);
+                render_trail(&bodies[i], sim->zoom, sim->camera_focus, sim->camera_pan);
             }   
             if (sim->show_current_trajectory) {
-                render_velocity(&bodies[i], sim->zoom, sim->camera_offset);
+                render_velocity(&bodies[i], sim->zoom, sim->camera_focus, sim->camera_pan);
             }
             
         }
