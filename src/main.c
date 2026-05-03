@@ -19,7 +19,8 @@ int main() {
         app_draw(&app);
         EndDrawing();
     }
-
+    
+    app_deinit(&app);
     CloseWindow();
     return 0;
 }

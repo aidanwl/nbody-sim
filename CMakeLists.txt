@@ -7,13 +7,13 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 include(FetchContent)
 
 # Pick a released version instead of tracking master
-set(RAYLIB_VERSION 6.0)
+set(RAYLIB_VERSION 5.5)
 
 # Download thing to make it easier, still have to install stuff
 FetchContent_Declare(
     raylib
     GIT_REPOSITORY https://github.com/raysan5/raylib.git
-    GIT_TAG 5.5
+    GIT_TAG ${RAYLIB_VERSION}
 )
 
 # Remove Bloat

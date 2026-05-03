@@ -23,6 +23,7 @@ typedef struct {
 } Simulator;
 
 void simulator_init(Simulator *sim);
+void simulator_deinit(Simulator *sim);
 
 void simulator_update(Simulator *sim, float frame_dt);
 

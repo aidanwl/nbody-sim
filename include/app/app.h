@@ -24,5 +24,7 @@ typedef struct {
 void app_init(App *app, int screen_width, int screen_height);
 void app_update(App *app);
 void app_draw(App *app);
+void app_deinit(App *app);
+
 
 #endif
