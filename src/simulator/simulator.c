@@ -51,14 +51,35 @@ static void simulator_draw_velocity(const Simulator *sim, const Body *body) {
 static void simulator_draw_bodies(const Simulator *sim, Body bodies[], int body_count) {
     for (int i = 0; i < body_count; i++) {
         Vector2 screen_pos = world_to_screen(sim, bodies[i].position);
-        render_body(screen_pos, 5.0f * sim->zoom, WHITE);
+        Color color = (i == sim->locked_body_index) ? YELLOW : WHITE;
+
+        render_body(screen_pos, 5.0f * sim->zoom, color);
     }
+}
+
+static void simulator_update_body_lock(Simulator *sim, Body bodies[], int body_count) {
+    if (sim->locked_body_index >= body_count) {
+        sim->locked_body_index = -1;
+    }
+
+    if (sim->locked_body_index < 0) {
+        return;
+    }
+
+    const float follow_strength = 0.08f;
+    Vector2 target = bodies[sim->locked_body_index].position;
+    Vector2 to_target = vec2_vsub(target, sim->camera_focus);
+
+    sim->camera_focus = vec2_vadd(
+        sim->camera_focus,
+        vec2_vscale(to_target, follow_strength)
+    );
+    sim->camera_pan = (Vector2){0.0f, 0.0f};
 }
 
 void simulator_init(Simulator *sim) {
     sim->camera_focus = (Vector2){400.0f, 300.0f};
     sim->camera_pan = (Vector2){0.0f, 0.0f};
-    sim->camera_user_moved = false;
     sim->zoom = 1.0f;
     sim->origin_icon = LoadTexture("../assets/origin.png");
 
@@ -66,6 +87,8 @@ void simulator_init(Simulator *sim) {
     sim->show_current_trajectory = false;
 
     sim->speed_slider_open = false;
+    sim->body_menu_open = false;
+    sim->locked_body_index = -1;
 }
 
 void simulator_update(Simulator *sim, float frame_dt) {
@@ -73,6 +96,7 @@ void simulator_update(Simulator *sim, float frame_dt) {
 }
 
 void simulator_draw(Simulator *sim, Body bodies[], int body_count, float *sim_speed, bool *paused) {
+    simulator_update_body_lock(sim, bodies, body_count);
 
     if (sim->show_paths || sim->show_current_trajectory) {
         for (int i = 0; i < body_count; i++) {
@@ -87,7 +111,7 @@ void simulator_draw(Simulator *sim, Body bodies[], int body_count, float *sim_sp
     }
     
     simulator_draw_bodies(sim, bodies, body_count);
-    simulator_draw_controls(sim, sim_speed, paused, body_count);
+    simulator_draw_controls(sim, bodies, sim_speed, paused, body_count);
 }
 
 void simulator_deinit(Simulator *sim) {

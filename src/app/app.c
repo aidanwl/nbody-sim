@@ -112,5 +112,6 @@ void app_draw(App *app) {
 }
 
 void app_deinit(App *app) {
+    (void)app;
     simulator_deinit(&simulator);
 }

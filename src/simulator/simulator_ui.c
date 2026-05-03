@@ -67,11 +67,54 @@ static void simulator_draw_navigation(Simulator *sim) {
 
     if (widget_image_button(origin_button, sim->origin_icon)) {
         sim->camera_pan = (Vector2){0.0f, 0.0f};
+        sim->locked_body_index = -1;
         sim->zoom = 1.0f;
     }
 }
 
-void simulator_draw_controls(Simulator *sim, float *sim_speed, bool *paused, int body_count) {
+static void simulator_draw_body_lock_menu(Simulator *sim, Body bodies[], int body_count) {
+    Rectangle menu_button = layout_anchor(140, 40, LAYOUT_TOP_LEFT, 20, 20);
+
+    if (widget_button(menu_button, "Body Lock")) {
+        sim->body_menu_open = !sim->body_menu_open;
+    }
+
+    if (sim->locked_body_index >= 0) {
+        if (widget_button(layout_anchor(140, 40, LAYOUT_TOP_LEFT, 170, 20), "Unlock")) {
+            sim->locked_body_index = -1;
+        }
+    }
+
+    if (!sim->body_menu_open) {
+        return;
+    }
+
+    float panel_height = 50.0f + body_count * 34.0f;
+    Rectangle panel = layout_anchor(240, panel_height, LAYOUT_TOP_LEFT, 170, 70);
+
+    DrawRectangleRec(panel, (Color){30, 30, 30, 230});
+    DrawRectangleLinesEx(panel, 2.0f, WHITE);
+    DrawText("Bodies", (int)(panel.x + 10), (int)(panel.y + 10), 20, WHITE);
+
+    for (int i = 0; i < body_count; i++) {
+        Rectangle button = {
+            panel.x + 10.0f,
+            panel.y + 40.0f + i * 34.0f,
+            panel.width - 20.0f,
+            28.0f
+        };
+        const char *label = TextFormat("Body %d  m=%.1f", i + 1, bodies[i].mass);
+
+        if (widget_button(button, label)) {
+            sim->locked_body_index = i;
+            sim->camera_focus = bodies[i].position;
+            sim->camera_pan = (Vector2){0.0f, 0.0f};
+            sim->body_menu_open = false;
+        }
+    }
+}
+
+void simulator_draw_controls(Simulator *sim, Body bodies[], float *sim_speed, bool *paused, int body_count) {
     *paused = widget_toggle(
         layout_anchor(140, 40, LAYOUT_TOP_LEFT, 20, 80),
         "Paused",
@@ -81,6 +124,7 @@ void simulator_draw_controls(Simulator *sim, float *sim_speed, bool *paused, int
     simulator_draw_options(sim);
     simulator_draw_speed_control(sim, sim_speed);
     simulator_draw_navigation(sim);
+    simulator_draw_body_lock_menu(sim, bodies, body_count);
 
     DrawText(TextFormat("Speed: %.2fx", *sim_speed), 20, 140, 20, WHITE);
     DrawText(TextFormat("Bodies: %d", body_count), 20, 170, 20, WHITE);
