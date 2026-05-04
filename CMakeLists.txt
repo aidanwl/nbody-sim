@@ -32,6 +32,7 @@ add_executable(nbody
     src/app/app.c
     src/editor/body_creator.c
     src/simulator/simulator.c
+    src/simulator/simulator_templates.c
     src/simulator/simulator_ui.c
     src/simulator/simulator_camera.c
 )

@@ -362,5 +362,5 @@ void body_creator_draw_preview(const BodyCreator *creator) {
 }
 
 bool body_creator_blocks_movement(const BodyCreator *creator) {
-    return creator->active_input != BODY_CREATOR_INPUT_NONE;
+    return creator->open || creator->placing || creator->active_input != BODY_CREATOR_INPUT_NONE;
 }

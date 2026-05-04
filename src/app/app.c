@@ -7,6 +7,7 @@
 #include "core/simulation.h"
 #include "editor/body_creator.h"
 #include "simulator/simulator.h"
+#include "simulator/simulator_templates.h"
 #include "core/widget.h"
 
 static Simulator simulator;
@@ -36,65 +37,19 @@ static void app_delete_body(App *app, int index) {
     }
 }
 
-static void app_init_bodies(App *app) {
-    app->body_count = 4;
+static void app_load_template(App *app, int template_index) {
+    if (simulator_template_get(template_index) == NULL) {
+        simulator.requested_template_index = -1;
+        return;
+    }
 
-    app->bodies[0] = (Body){
-        .name = "Star A",
-        .mass = 600.0f,
-        .position = {350.0f, 300.0f},
-        .velocity = {0.0f, -1.15f},
-        .force = {0.0f, 0.0f},
-        .color = GOLD,
-        .trail_count = 0,
-        .trail_start = 0,
-        .trail_sample_counter = 0
-    };
-
-    app->bodies[1] = (Body){
-        .name = "Star B",
-        .mass = 600.0f,
-        .position = {450.0f, 300.0f},
-        .velocity = {0.0f, 1.15f},
-        .force = {0.0f, 0.0f},
-        .color = SKYBLUE,
-        .trail_count = 0,
-        .trail_start = 0,
-        .trail_sample_counter = 0
-    };
-
-    app->bodies[2] = (Body){
-        .name = "Inner Planet",
-        .mass = 5.0f,
-        .position = {400.0f, 210.0f},
-        .velocity = {2.7f, 0.0f},
-        .force = {0.0f, 0.0f},
-        .color = GREEN,
-        .trail_count = 0,
-        .trail_start = 0,
-        .trail_sample_counter = 0
-    };
-
-    app->bodies[3] = (Body){
-        .name = "Outer Body",
-        .mass = 2.0f,
-        .position = {400.0f, 470.0f},
-        .velocity = {-2.0f, 0.0f},
-        .force = {0.0f, 0.0f},
-        .color = ORANGE,
-        .trail_count = 0,
-        .trail_start = 0,
-        .trail_sample_counter = 0
-    };
-}
-
-static void app_reset(App *app) {
-    app_init_bodies(app);
+    app->body_count = simulator_template_copy_bodies(template_index, app->bodies, MAX_BODIES);
     app->sim_speed = 1.0f;
     app->paused = false;
     simulation_accumulator = 0.0f;
 
     simulator_reset(&simulator);
+    simulator.active_template_index = template_index;
     body_creator_init(&app->creator, app->screen_width, app->screen_height);
     body_creator_set_center_icon(&app->creator, simulator.origin_icon);
 }
@@ -126,10 +81,8 @@ void app_init(App *app, int screen_width, int screen_height) {
     app->sim_speed = 1.0f;
     app->paused = false;
 
-    app_init_bodies(app);
     simulator_init(&simulator);
-    body_creator_init(&app->creator, screen_width, screen_height);
-    body_creator_set_center_icon(&app->creator, simulator.origin_icon);
+    app_load_template(app, simulator.active_template_index);
 }
 
 void app_update(App *app) {
@@ -149,8 +102,8 @@ void app_draw(App *app) {
         &app->sim_speed,
         &app->paused
     );
-    if (simulator.reset_requested) {
-        app_reset(app);
+    if (simulator.requested_template_index >= 0) {
+        app_load_template(app, simulator.requested_template_index);
         return;
     }
 

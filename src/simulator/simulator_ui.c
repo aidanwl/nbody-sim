@@ -1,4 +1,7 @@
 #include "simulator/simulator.h"
+#include "simulator/simulator_templates.h"
+
+#include <stddef.h>
 
 #include "core/widget.h"
 #include "core/layout.h"
@@ -88,11 +91,53 @@ static void simulator_draw_navigation(Simulator *sim) {
     }
 }
 
-static void simulator_draw_reset_button(Simulator *sim) {
-    Rectangle reset_button = layout_anchor(140, 40, LAYOUT_TOP_RIGHT, 20, 20);
+static void simulator_draw_templates_menu(Simulator *sim) {
+    Rectangle menu_button = layout_anchor(140, 40, LAYOUT_TOP_RIGHT, 20, 20);
+    Rectangle reset_button = layout_anchor(140, 40, LAYOUT_TOP_RIGHT, 20, 70);
+
+    if (widget_button(menu_button, "Templates")) {
+        sim->template_menu_open = !sim->template_menu_open;
+        sim->body_menu_open = false;
+    }
 
     if (widget_button(reset_button, "Reset")) {
-        sim->reset_requested = true;
+        sim->requested_template_index = sim->active_template_index;
+        sim->template_menu_open = false;
+    }
+
+    if (!sim->template_menu_open) {
+        return;
+    }
+
+    int template_count = simulator_template_count();
+    Rectangle panel = layout_anchor(240, 50.0f + template_count * 34.0f, LAYOUT_TOP_RIGHT, 20, 120);
+
+    DrawRectangleRec(panel, (Color){30, 30, 30, 230});
+    DrawRectangleLinesEx(panel, 2.0f, WHITE);
+    DrawText("Templates", (int)(panel.x + 10), (int)(panel.y + 10), 20, WHITE);
+
+    for (int i = 0; i < template_count; i++) {
+        const SimulatorTemplate *template = simulator_template_get(i);
+        const char *label = template == NULL ? "Unknown" : template->name;
+        Rectangle button = {
+            panel.x + 10.0f,
+            panel.y + 40.0f + i * 34.0f,
+            panel.width - 20.0f,
+            28.0f
+        };
+
+        if (i == sim->active_template_index) {
+            DrawRectangleLinesEx(
+                (Rectangle){button.x - 3.0f, button.y - 3.0f, button.width + 6.0f, button.height + 6.0f},
+                2.0f,
+                GREEN
+            );
+        }
+
+        if (widget_button(button, label)) {
+            sim->requested_template_index = i;
+            sim->template_menu_open = false;
+        }
     }
 }
 
@@ -156,7 +201,7 @@ void simulator_draw_controls(Simulator *sim, Body bodies[], float *sim_speed, bo
     );
 
     simulator_draw_options(sim);
-    simulator_draw_reset_button(sim);
+    simulator_draw_templates_menu(sim);
     simulator_draw_speed_control(sim, sim_speed);
     simulator_draw_navigation(sim);
     simulator_draw_body_lock_menu(sim, bodies, body_count);
