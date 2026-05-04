@@ -21,6 +21,7 @@ typedef struct {
     bool speed_slider_open;
     bool body_menu_open;
     bool input_blocked;
+    bool reset_requested;
     int locked_body_index;
     int named_body_index;
     int delete_body_index;
@@ -34,6 +35,7 @@ typedef struct {
 
 void simulator_init(Simulator *sim);
 void simulator_deinit(Simulator *sim);
+void simulator_reset(Simulator *sim);
 
 void simulator_update(Simulator *sim, float frame_dt);
 

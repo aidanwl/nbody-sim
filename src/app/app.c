@@ -10,6 +10,7 @@
 #include "core/widget.h"
 
 static Simulator simulator;
+static float simulation_accumulator = 0.0f;
 
 static void app_delete_body(App *app, int index) {
     if (index < 0 || index >= app->body_count) {
@@ -87,8 +88,18 @@ static void app_init_bodies(App *app) {
     };
 }
 
+static void app_reset(App *app) {
+    app_init_bodies(app);
+    app->sim_speed = 1.0f;
+    app->paused = false;
+    simulation_accumulator = 0.0f;
+
+    simulator_reset(&simulator);
+    body_creator_init(&app->creator, app->screen_width, app->screen_height);
+    body_creator_set_center_icon(&app->creator, simulator.origin_icon);
+}
+
 static void app_update_simulation(App *app) {
-    static float accumulator = 0.0f;
     const float fixed_dt = 1.0f / 240.0f;
 
     if (app->paused) {
@@ -99,11 +110,11 @@ static void app_update_simulation(App *app) {
         return;
     }
 
-    accumulator += app->dt * app->sim_speed;
+    simulation_accumulator += app->dt * app->sim_speed;
 
-    while (accumulator >= fixed_dt) {
+    while (simulation_accumulator >= fixed_dt) {
         time_step(app->bodies, app->body_count, fixed_dt);
-        accumulator -= fixed_dt;
+        simulation_accumulator -= fixed_dt;
     }
 }
 
@@ -138,6 +149,11 @@ void app_draw(App *app) {
         &app->sim_speed,
         &app->paused
     );
+    if (simulator.reset_requested) {
+        app_reset(app);
+        return;
+    }
+
     if (simulator.delete_body_index >= 0) {
         app_delete_body(app, simulator.delete_body_index);
         simulator.delete_body_index = -1;

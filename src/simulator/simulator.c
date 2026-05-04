@@ -164,11 +164,10 @@ static void simulator_update_body_lock(Simulator *sim, Body bodies[], int body_c
     sim->camera_pan = (Vector2){0.0f, 0.0f};
 }
 
-void simulator_init(Simulator *sim) {
+void simulator_reset(Simulator *sim) {
     sim->camera_focus = (Vector2){400.0f, 300.0f};
     sim->camera_pan = (Vector2){0.0f, 0.0f};
     sim->zoom = 1.0f;
-    sim->origin_icon = LoadTexture(FileExists("assets/origin.png") ? "assets/origin.png" : "../assets/origin.png");
 
     sim->path_mode = PATH_MODE_OFF;
     sim->show_current_trajectory = false;
@@ -176,9 +175,15 @@ void simulator_init(Simulator *sim) {
     sim->speed_slider_open = false;
     sim->body_menu_open = false;
     sim->input_blocked = false;
+    sim->reset_requested = false;
     sim->locked_body_index = -1;
     sim->named_body_index = -1;
     sim->delete_body_index = -1;
+}
+
+void simulator_init(Simulator *sim) {
+    sim->origin_icon = LoadTexture(FileExists("assets/origin.png") ? "assets/origin.png" : "../assets/origin.png");
+    simulator_reset(sim);
 }
 
 void simulator_update(Simulator *sim, float frame_dt) {

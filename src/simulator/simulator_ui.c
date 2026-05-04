@@ -88,6 +88,14 @@ static void simulator_draw_navigation(Simulator *sim) {
     }
 }
 
+static void simulator_draw_reset_button(Simulator *sim) {
+    Rectangle reset_button = layout_anchor(140, 40, LAYOUT_TOP_RIGHT, 20, 20);
+
+    if (widget_button(reset_button, "Reset")) {
+        sim->reset_requested = true;
+    }
+}
+
 static void simulator_draw_body_lock_menu(Simulator *sim, Body bodies[], int body_count) {
     Rectangle menu_button = layout_anchor(140, 40, LAYOUT_TOP_LEFT, 20, 20);
 
@@ -148,6 +156,7 @@ void simulator_draw_controls(Simulator *sim, Body bodies[], float *sim_speed, bo
     );
 
     simulator_draw_options(sim);
+    simulator_draw_reset_button(sim);
     simulator_draw_speed_control(sim, sim_speed);
     simulator_draw_navigation(sim);
     simulator_draw_body_lock_menu(sim, bodies, body_count);
