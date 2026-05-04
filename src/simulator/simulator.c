@@ -3,6 +3,7 @@
 #include "core/renderer.h"
 #include "core/widget.h"
 
+// Converts world coordinates to pixel coordinates
 static Vector2 world_to_screen(const Simulator *sim, Vector2 world_pos) {
     Vector2 screen_center = {
         GetScreenWidth() * 0.5f,
@@ -15,6 +16,7 @@ static Vector2 world_to_screen(const Simulator *sim, Vector2 world_pos) {
     return vec2_vadd(vec2_vadd(screen_center, scaled), sim->camera_pan);
 }
 
+// Converts screen coordinates to world coordinates
 Vector2 simulator_screen_to_world(const Simulator *sim, Vector2 screen_pos) {
     Vector2 screen_center = {
         GetScreenWidth() * 0.5f,
@@ -31,7 +33,6 @@ void simulator_center_on_world(Simulator *sim, Vector2 world_pos) {
     sim->camera_focus = world_pos;
     sim->camera_pan = (Vector2){0.0f, 0.0f};
 }
-
 
 static int simulator_path_point_limit(PathMode mode) {
     switch (mode) {

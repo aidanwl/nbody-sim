@@ -8,6 +8,7 @@
 #include "core/widget.h"
 #include "raylib.h"
 
+// Input IDs (tracks which textbox is active)
 enum {
     BODY_CREATOR_INPUT_NONE = 0,
     BODY_CREATOR_INPUT_NAME,
@@ -16,12 +17,16 @@ enum {
     BODY_CREATOR_INPUT_VELOCITY_Y
 };
 
+// Stores all the rectangles used for the body creator UI
 typedef struct {
     Rectangle panel;
     Rectangle name_input;
     Rectangle mass_input;
+    Rectangle mass_slider;
     Rectangle velocity_x_input;
+    Rectangle velocity_x_slider;
     Rectangle velocity_y_input;
+    Rectangle velocity_y_slider;
 } BodyCreatorLayout;
 
 static float clampf(float x, float min, float max) {
@@ -50,6 +55,7 @@ static bool numeric_key_allowed(char key, const char *buffer, int len) {
     return false;
 }
 
+// Updates text when using sliders or opening creator prompt (setting default values)
 static void body_creator_sync_text(BodyCreator *creator) {
     snprintf(creator->name_text, sizeof(creator->name_text), "%s", creator->draft.name);
     snprintf(creator->mass_text, sizeof(creator->mass_text), "%.2f", creator->draft.mass);
@@ -57,6 +63,7 @@ static void body_creator_sync_text(BodyCreator *creator) {
     snprintf(creator->velocity_y_text, sizeof(creator->velocity_y_text), "%.2f", creator->draft.velocity.y);
 }
 
+// Sets default values for body creator window
 static void body_creator_reset_draft(BodyCreator *creator, int screen_width, int screen_height) {
     snprintf(creator->draft.name, sizeof(creator->draft.name), "New Body");
     creator->draft.mass = 10.0f;
@@ -67,6 +74,7 @@ static void body_creator_reset_draft(BodyCreator *creator, int screen_width, int
     body_creator_sync_text(creator);
 }
 
+// Detects click, draws input box, and reads keyboard input
 static void draw_text_input(Rectangle bounds, const char *label, char *buffer, int buffer_size, int input_id, bool numeric_only, BodyCreator *creator) {
     Vector2 mouse = GetMousePosition();
     bool hovered = CheckCollisionPointRec(mouse, bounds);
@@ -111,6 +119,7 @@ static void draw_text_input(Rectangle bounds, const char *label, char *buffer, i
     }
 }
 
+// Convert text to float and clamp it
 static float parse_float_input(const char *text, float fallback, float min, float max) {
     char *end = NULL;
     float value = strtof(text, &end);
@@ -122,6 +131,7 @@ static float parse_float_input(const char *text, float fallback, float min, floa
     return clampf(value, min, max);
 }
 
+// Makes the color more transparent
 static Color color_with_alpha(Color color, unsigned char alpha) {
     color.a = alpha;
     return color;
@@ -131,6 +141,7 @@ static bool rect_contains_mouse(Rectangle bounds) {
     return CheckCollisionPointRec(GetMousePosition(), bounds);
 }
 
+// Draws white border when selected and updates color on click
 static void draw_color_swatch(BodyCreator *creator, Rectangle bounds, Color color) {
     bool selected = creator->draft.color.r == color.r &&
                     creator->draft.color.g == color.g &&
@@ -186,8 +197,11 @@ static BodyCreatorLayout body_creator_layout(int screen_width, int screen_height
     layout.panel = body_creator_panel_bounds(screen_width, screen_height);
     layout.name_input = panel_rect(layout.panel, 0.06f, 0.14f, 0.58f, 0.075f);
     layout.mass_input = panel_rect(layout.panel, 0.06f, 0.30f, 0.30f, 0.075f);
+    layout.mass_slider = panel_rect(layout.panel, 0.43f, 0.335f, 0.38f, 0.045f);
     layout.velocity_x_input = panel_rect(layout.panel, 0.06f, 0.48f, 0.30f, 0.075f);
+    layout.velocity_x_slider = panel_rect(layout.panel, 0.43f, 0.515f, 0.38f, 0.045f);
     layout.velocity_y_input = panel_rect(layout.panel, 0.06f, 0.66f, 0.30f, 0.075f);
+    layout.velocity_y_slider = panel_rect(layout.panel, 0.43f, 0.695f, 0.38f, 0.045f);
 
     return layout;
 }
@@ -231,6 +245,23 @@ static void body_creator_clear_input_on_outside_click(BodyCreator *creator, Rect
     creator->active_input = BODY_CREATOR_INPUT_NONE;
 }
 
+static void body_creator_draw_numeric_field(
+    BodyCreator *creator,
+    Rectangle input,
+    Rectangle slider,
+    const char *label,
+    char *text,
+    int text_size,
+    int input_id,
+    float min,
+    float max,
+    float *value
+) {
+    draw_text_input(input, label, text, text_size, input_id, true, creator);
+    *value = parse_float_input(text, *value, min, max);
+    *value = widget_slider(slider, min, max, *value, label);
+}
+
 static void body_creator_draw_header(BodyCreator *creator, Rectangle panel, float label_x) {
     DrawRectangleRec(panel, (Color){30, 30, 30, 235});
     DrawRectangleLinesEx(panel, 2.0f, WHITE);
@@ -252,20 +283,44 @@ static void body_creator_draw_fields(BodyCreator *creator, BodyCreatorLayout lay
     draw_text_input(layout.name_input, "Name", creator->name_text, sizeof(creator->name_text), BODY_CREATOR_INPUT_NAME, false, creator);
     snprintf(creator->draft.name, sizeof(creator->draft.name), "%s", creator->name_text[0] == '\0' ? "Unnamed" : creator->name_text);
 
-    draw_text_input(layout.mass_input, "Mass", creator->mass_text, sizeof(creator->mass_text), BODY_CREATOR_INPUT_MASS, true, creator);
-    creator->draft.mass = parse_float_input(creator->mass_text, creator->draft.mass, 1.0f, 1000.0f);
-    creator->draft.mass = widget_slider(panel_rect(layout.panel, 0.43f, 0.335f, 0.38f, 0.045f), 1.0f, 1000.0f, creator->draft.mass, "Mass");
-    if (creator->active_input != BODY_CREATOR_INPUT_MASS && IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
-        body_creator_sync_text(creator);
-    }
+    body_creator_draw_numeric_field(
+        creator,
+        layout.mass_input,
+        layout.mass_slider,
+        "Mass",
+        creator->mass_text,
+        sizeof(creator->mass_text),
+        BODY_CREATOR_INPUT_MASS,
+        1.0f,
+        1000.0f,
+        &creator->draft.mass
+    );
 
-    draw_text_input(layout.velocity_x_input, "Velocity X", creator->velocity_x_text, sizeof(creator->velocity_x_text), BODY_CREATOR_INPUT_VELOCITY_X, true, creator);
-    creator->draft.velocity.x = parse_float_input(creator->velocity_x_text, creator->draft.velocity.x, -20.0f, 20.0f);
-    creator->draft.velocity.x = widget_slider(panel_rect(layout.panel, 0.43f, 0.515f, 0.38f, 0.045f), -20.0f, 20.0f, creator->draft.velocity.x, "Velocity X");
+    body_creator_draw_numeric_field(
+        creator,
+        layout.velocity_x_input,
+        layout.velocity_x_slider,
+        "Velocity X",
+        creator->velocity_x_text,
+        sizeof(creator->velocity_x_text),
+        BODY_CREATOR_INPUT_VELOCITY_X,
+        -20.0f,
+        20.0f,
+        &creator->draft.velocity.x
+    );
 
-    draw_text_input(layout.velocity_y_input, "Velocity Y", creator->velocity_y_text, sizeof(creator->velocity_y_text), BODY_CREATOR_INPUT_VELOCITY_Y, true, creator);
-    creator->draft.velocity.y = parse_float_input(creator->velocity_y_text, creator->draft.velocity.y, -20.0f, 20.0f);
-    creator->draft.velocity.y = widget_slider(panel_rect(layout.panel, 0.43f, 0.695f, 0.38f, 0.045f), -20.0f, 20.0f, creator->draft.velocity.y, "Velocity Y");
+    body_creator_draw_numeric_field(
+        creator,
+        layout.velocity_y_input,
+        layout.velocity_y_slider,
+        "Velocity Y",
+        creator->velocity_y_text,
+        sizeof(creator->velocity_y_text),
+        BODY_CREATOR_INPUT_VELOCITY_Y,
+        -20.0f,
+        20.0f,
+        &creator->draft.velocity.y
+    );
 
     if (creator->active_input == BODY_CREATOR_INPUT_NONE && IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
         body_creator_sync_text(creator);
@@ -341,6 +396,7 @@ bool body_creator_draw(BodyCreator *creator, int screen_width, int screen_height
     return body_creator_draw_actions(creator, panel);
 }
 
+// Draws body location and velocity vector when creating
 void body_creator_draw_preview(const BodyCreator *creator) {
     if (creator->placing) {
         DrawCircleV(GetMousePosition(), 6.0f, color_with_alpha(GREEN, 130));
@@ -361,6 +417,7 @@ void body_creator_draw_preview(const BodyCreator *creator) {
     DrawLineV(creator->draft.position, end, creator->draft.color);
 }
 
+// Stops interaction with simulator when using body creator
 bool body_creator_blocks_movement(const BodyCreator *creator) {
     return creator->open || creator->placing || creator->active_input != BODY_CREATOR_INPUT_NONE;
 }

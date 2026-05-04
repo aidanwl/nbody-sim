@@ -1,8 +1,4 @@
-#include <math.h>
 #include "core/vec2.h"
-#include "core/constants.h"
-
-// ---------- Vector Return ------------------------
 
 Vector2 vec2_vadd(Vector2 a, Vector2 b) {
 	return (Vector2){a.x + b.x, a.y + b.y};

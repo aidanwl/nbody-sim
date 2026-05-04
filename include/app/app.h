@@ -19,6 +19,8 @@ typedef struct {
     int screen_height;
 
     BodyCreator creator;
+    BodyDraft pending_body;
+    bool add_body_requested;
 } App;
 
 void app_init(App *app, int screen_width, int screen_height);

@@ -1,8 +1,6 @@
 #include "core/widget.h"
 #include <stdio.h>
 
-// ----------------- Button ----------------------------
-
 bool widget_button(Rectangle bounds, const char *text) {
     Vector2 mouse = GetMousePosition();
 
@@ -28,8 +26,6 @@ bool widget_button(Rectangle bounds, const char *text) {
     return clicked;
 
 }
-
-// ----------------- Toggle ----------------------------
 
 bool widget_toggle(Rectangle bounds, const char *text, bool value) {
     Vector2 mouse = GetMousePosition();
@@ -60,8 +56,6 @@ bool widget_toggle(Rectangle bounds, const char *text, bool value) {
 
     return value;
 }
-
-// ----------------- Slider ----------------------------
 
 static float clampf(float x, float min, float max) {
     if (x < min) return min;
@@ -132,7 +126,7 @@ float widget_slider(Rectangle bounds, float min, float max, float value, const c
     return value;
 }
 
-bool widget_dropdown_header(Rectangle bounds, const char *text, bool open) {
+bool widget_dropdown(Rectangle bounds, const char *text, bool open) {
     Vector2 mouse = GetMousePosition();
     bool hovered = CheckCollisionPointRec(mouse, bounds);
 
@@ -148,7 +142,6 @@ bool widget_dropdown_header(Rectangle bounds, const char *text, bool open) {
     return open;
 }
 
-// ----------------- Origin Button ----------------------------
 bool widget_image_button(Rectangle bounds, Texture2D tex) {
     Vector2 mouse = GetMousePosition();
 

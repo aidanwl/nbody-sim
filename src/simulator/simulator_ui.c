@@ -7,6 +7,21 @@
 #include "core/layout.h"
 #include "raylib.h"
 
+static void simulator_draw_panel(Rectangle panel, const char *title) {
+    DrawRectangleRec(panel, (Color){30, 30, 30, 230});
+    DrawRectangleLinesEx(panel, 2.0f, WHITE);
+    DrawText(title, (int)(panel.x + 10), (int)(panel.y + 10), 20, WHITE);
+}
+
+static Rectangle simulator_panel_row(Rectangle panel, int index, float width) {
+    return (Rectangle){
+        panel.x + 10.0f,
+        panel.y + 40.0f + index * 34.0f,
+        width,
+        28.0f
+    };
+}
+
 static void simulator_draw_options(Simulator *sim) {
     Rectangle panel = layout_anchor(220, 170, LAYOUT_TOP_RIGHT, 20, 120);
     const char *path_label = "Paths: Off";
@@ -112,19 +127,12 @@ static void simulator_draw_templates_menu(Simulator *sim) {
     int template_count = simulator_template_count();
     Rectangle panel = layout_anchor(240, 50.0f + template_count * 34.0f, LAYOUT_TOP_RIGHT, 20, 120);
 
-    DrawRectangleRec(panel, (Color){30, 30, 30, 230});
-    DrawRectangleLinesEx(panel, 2.0f, WHITE);
-    DrawText("Templates", (int)(panel.x + 10), (int)(panel.y + 10), 20, WHITE);
+    simulator_draw_panel(panel, "Templates");
 
     for (int i = 0; i < template_count; i++) {
         const SimulatorTemplate *template = simulator_template_get(i);
         const char *label = template == NULL ? "Unknown" : template->name;
-        Rectangle button = {
-            panel.x + 10.0f,
-            panel.y + 40.0f + i * 34.0f,
-            panel.width - 20.0f,
-            28.0f
-        };
+        Rectangle button = simulator_panel_row(panel, i, panel.width - 20.0f);
 
         if (i == sim->active_template_index) {
             DrawRectangleLinesEx(
@@ -189,9 +197,7 @@ static void simulator_draw_advanced_menu(Simulator *sim, Body bodies[], int body
     Rectangle panel = layout_anchor(300, panel_height, LAYOUT_TOP_RIGHT, 20, 360);
     float cursor_y = panel.y + 40.0f;
 
-    DrawRectangleRec(panel, (Color){30, 30, 30, 230});
-    DrawRectangleLinesEx(panel, 2.0f, WHITE);
-    DrawText("Body Stats", (int)(panel.x + 10), (int)(panel.y + 10), 20, WHITE);
+    simulator_draw_panel(panel, "Body Stats");
 
     if (body_count <= 0) {
         DrawText("No bodies", (int)(panel.x + 10), (int)cursor_y, 20, WHITE);
@@ -206,7 +212,7 @@ static void simulator_draw_advanced_menu(Simulator *sim, Body bodies[], int body
             28.0f
         };
         bool was_open = i == sim->stats_body_index;
-        bool is_open = widget_dropdown_header(header, bodies[i].name, was_open);
+        bool is_open = widget_dropdown(header, bodies[i].name, was_open);
 
         if (is_open && !was_open) {
             sim->stats_body_index = i;
@@ -242,17 +248,10 @@ static void simulator_draw_body_lock_menu(Simulator *sim, Body bodies[], int bod
     float panel_height = 50.0f + body_count * 34.0f;
     Rectangle panel = layout_anchor(240, panel_height, LAYOUT_TOP_LEFT, 170, 20);
 
-    DrawRectangleRec(panel, (Color){30, 30, 30, 230});
-    DrawRectangleLinesEx(panel, 2.0f, WHITE);
-    DrawText("Bodies", (int)(panel.x + 10), (int)(panel.y + 10), 20, WHITE);
+    simulator_draw_panel(panel, "Bodies");
 
     for (int i = 0; i < body_count; i++) {
-        Rectangle lock_button = {
-            panel.x + 10.0f,
-            panel.y + 40.0f + i * 34.0f,
-            panel.width - 64.0f,
-            28.0f
-        };
+        Rectangle lock_button = simulator_panel_row(panel, i, panel.width - 64.0f);
         Rectangle delete_button = {
             panel.x + panel.width - 48.0f,
             lock_button.y,

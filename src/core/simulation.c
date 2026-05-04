@@ -3,7 +3,7 @@
 #include "core/vec2.h"
 #include "core/constants.h"
 
-Vector2 gravitational_force(const Body *a, const Body *b) {
+static Vector2 gravitational_force(const Body *a, const Body *b) {
     Vector2 r = vec2_vsub(b->position, a->position);
 
     float dist_sq = r.x * r.x + r.y * r.y + EPSILON * EPSILON;
@@ -15,7 +15,7 @@ Vector2 gravitational_force(const Body *a, const Body *b) {
 }
 
 
-void update_body_position(Body *b, float dt) {
+static void update_body_position(Body *b, float dt) {
 
 	Vector2 b_acc_initial = vec2_vscale(b->force, 1.0 / b->mass);
 	
@@ -24,7 +24,7 @@ void update_body_position(Body *b, float dt) {
 	b->position = vec2_vadd(velocity_term_of_position, vec2_vscale(b_acc_initial, (0.5 * dt * dt)));
 }
 
-void update_body_velocity(Body *b, Vector2 b_acc_initial, float dt) {
+static void update_body_velocity(Body *b, Vector2 b_acc_initial, float dt) {
 	Vector2 b_acc_new = vec2_vscale(b->force, 1.0/ b->mass);
 
 	// v = v + (1/2) * (a_i + a_f) * dt
@@ -32,7 +32,7 @@ void update_body_velocity(Body *b, Vector2 b_acc_initial, float dt) {
 
 }
 
-void body_add_trail_point(Body *body) {
+static void body_add_trail_point(Body *body) {
 	body->trail_sample_counter++;
 
 	if (body->trail_sample_counter < TRAIL_SAMPLE_INTERVAL) {
@@ -54,7 +54,7 @@ void body_add_trail_point(Body *body) {
 
 
 
-void calculate_all_forces(Body bodies[], int bodycount) {
+static void calculate_all_forces(Body bodies[], int bodycount) {
 	
 	for (int i = 0; i < bodycount; i++) {
         	bodies[i].force = (Vector2){0.0f, 0.0f};

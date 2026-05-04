@@ -2,6 +2,7 @@
 
 #include "raylib.h"
 
+// Move camera around with WASD and mouse
 void simulator_update_camera(Simulator *sim, float frame_dt) {
     const float pan_speed = 300.0f * frame_dt;
     const float zoom_speed = 1.0f;
