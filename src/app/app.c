@@ -35,6 +35,12 @@ static void app_delete_body(App *app, int index) {
     } else if (simulator.named_body_index > index) {
         simulator.named_body_index--;
     }
+
+    if (simulator.stats_body_index == index) {
+        simulator.stats_body_index = -1;
+    } else if (simulator.stats_body_index > index) {
+        simulator.stats_body_index--;
+    }
 }
 
 static void app_load_template(App *app, int template_index) {
@@ -45,7 +51,7 @@ static void app_load_template(App *app, int template_index) {
 
     app->body_count = simulator_template_copy_bodies(template_index, app->bodies, MAX_BODIES);
     app->sim_speed = 1.0f;
-    app->paused = false;
+    app->paused = true;
     simulation_accumulator = 0.0f;
 
     simulator_reset(&simulator);
@@ -79,7 +85,7 @@ void app_init(App *app, int screen_width, int screen_height) {
 
     app->dt = 0.0f;
     app->sim_speed = 1.0f;
-    app->paused = false;
+    app->paused = true;
 
     simulator_init(&simulator);
     app_load_template(app, simulator.active_template_index);

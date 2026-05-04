@@ -132,6 +132,22 @@ float widget_slider(Rectangle bounds, float min, float max, float value, const c
     return value;
 }
 
+bool widget_dropdown_header(Rectangle bounds, const char *text, bool open) {
+    Vector2 mouse = GetMousePosition();
+    bool hovered = CheckCollisionPointRec(mouse, bounds);
+
+    if (hovered && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        open = !open;
+    }
+
+    DrawRectangleRec(bounds, hovered ? GRAY : LIGHTGRAY);
+    DrawRectangleLinesEx(bounds, 2.0f, BLACK);
+    DrawText(open ? "v" : ">", (int)(bounds.x + 8), (int)(bounds.y + 5), 20, BLACK);
+    DrawText(text, (int)(bounds.x + 30), (int)(bounds.y + 5), 20, BLACK);
+
+    return open;
+}
+
 // ----------------- Origin Button ----------------------------
 bool widget_image_button(Rectangle bounds, Texture2D tex) {
     Vector2 mouse = GetMousePosition();

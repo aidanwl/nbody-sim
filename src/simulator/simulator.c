@@ -175,10 +175,12 @@ void simulator_reset(Simulator *sim) {
     sim->speed_slider_open = false;
     sim->body_menu_open = false;
     sim->template_menu_open = false;
+    sim->advanced_menu_open = false;
     sim->input_blocked = false;
     sim->requested_template_index = -1;
     sim->locked_body_index = -1;
     sim->named_body_index = -1;
+    sim->stats_body_index = -1;
     sim->delete_body_index = -1;
 }
 

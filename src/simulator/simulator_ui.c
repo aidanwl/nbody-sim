@@ -141,6 +141,87 @@ static void simulator_draw_templates_menu(Simulator *sim) {
     }
 }
 
+static void simulator_draw_body_stats(const Body *body, Rectangle panel, float *cursor_y) {
+    Vector2 acceleration = {0.0f, 0.0f};
+
+    if (body->mass != 0.0f) {
+        acceleration = vec2_vscale(body->force, 1.0f / body->mass);
+    }
+
+    DrawText(TextFormat("Position: %.2f, %.2f", body->position.x, body->position.y), (int)(panel.x + 18), (int)*cursor_y, 16, WHITE);
+    *cursor_y += 20.0f;
+    DrawText(TextFormat("Velocity: %.2f, %.2f", body->velocity.x, body->velocity.y), (int)(panel.x + 18), (int)*cursor_y, 16, WHITE);
+    *cursor_y += 20.0f;
+    DrawText(TextFormat("Accel: %.4f, %.4f", acceleration.x, acceleration.y), (int)(panel.x + 18), (int)*cursor_y, 16, WHITE);
+    *cursor_y += 20.0f;
+    DrawText(TextFormat("Mass: %.2f", body->mass), (int)(panel.x + 18), (int)*cursor_y, 16, WHITE);
+    *cursor_y += 26.0f;
+}
+
+static void simulator_draw_advanced_menu(Simulator *sim, Body bodies[], int body_count) {
+    Rectangle menu_button = layout_anchor(220, 40, LAYOUT_TOP_RIGHT, 20, 310);
+
+    if (widget_button(menu_button, "Advanced")) {
+        sim->advanced_menu_open = !sim->advanced_menu_open;
+    }
+
+    if (!sim->advanced_menu_open) {
+        return;
+    }
+
+    if (sim->stats_body_index >= body_count) {
+        sim->stats_body_index = -1;
+    }
+
+    float panel_height = 52.0f;
+
+    if (body_count <= 0) {
+        panel_height += 34.0f;
+    }
+
+    for (int i = 0; i < body_count; i++) {
+        panel_height += 34.0f;
+        if (i == sim->stats_body_index) {
+            panel_height += 90.0f;
+        }
+    }
+
+    Rectangle panel = layout_anchor(300, panel_height, LAYOUT_TOP_RIGHT, 20, 360);
+    float cursor_y = panel.y + 40.0f;
+
+    DrawRectangleRec(panel, (Color){30, 30, 30, 230});
+    DrawRectangleLinesEx(panel, 2.0f, WHITE);
+    DrawText("Body Stats", (int)(panel.x + 10), (int)(panel.y + 10), 20, WHITE);
+
+    if (body_count <= 0) {
+        DrawText("No bodies", (int)(panel.x + 10), (int)cursor_y, 20, WHITE);
+        return;
+    }
+
+    for (int i = 0; i < body_count; i++) {
+        Rectangle header = {
+            panel.x + 10.0f,
+            cursor_y,
+            panel.width - 20.0f,
+            28.0f
+        };
+        bool was_open = i == sim->stats_body_index;
+        bool is_open = widget_dropdown_header(header, bodies[i].name, was_open);
+
+        if (is_open && !was_open) {
+            sim->stats_body_index = i;
+        } else if (!is_open && was_open) {
+            sim->stats_body_index = -1;
+        }
+
+        cursor_y += 34.0f;
+
+        if (i == sim->stats_body_index) {
+            simulator_draw_body_stats(&bodies[i], panel, &cursor_y);
+        }
+    }
+}
+
 static void simulator_draw_body_lock_menu(Simulator *sim, Body bodies[], int body_count) {
     Rectangle menu_button = layout_anchor(140, 40, LAYOUT_TOP_LEFT, 20, 20);
 
@@ -202,6 +283,7 @@ void simulator_draw_controls(Simulator *sim, Body bodies[], float *sim_speed, bo
 
     simulator_draw_options(sim);
     simulator_draw_templates_menu(sim);
+    simulator_draw_advanced_menu(sim, bodies, body_count);
     simulator_draw_speed_control(sim, sim_speed);
     simulator_draw_navigation(sim);
     simulator_draw_body_lock_menu(sim, bodies, body_count);
