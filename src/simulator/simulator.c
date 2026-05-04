@@ -3,6 +3,8 @@
 #include "core/renderer.h"
 #include "core/widget.h"
 
+const Vector2 SIMULATOR_ORIGIN = {400.0f, 300.0f};
+
 // Converts world coordinates to pixel coordinates
 static Vector2 world_to_screen(const Simulator *sim, Vector2 world_pos) {
     Vector2 screen_center = {
@@ -166,7 +168,7 @@ static void simulator_update_body_lock(Simulator *sim, Body bodies[], int body_c
 }
 
 void simulator_reset(Simulator *sim) {
-    sim->camera_focus = (Vector2){400.0f, 300.0f};
+    sim->camera_focus = SIMULATOR_ORIGIN;
     sim->camera_pan = (Vector2){0.0f, 0.0f};
     sim->zoom = 1.0f;
 

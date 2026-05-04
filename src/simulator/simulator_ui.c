@@ -100,6 +100,7 @@ static void simulator_draw_navigation(Simulator *sim) {
     Rectangle origin_button = layout_anchor(30, 30, LAYOUT_BOTTOM_LEFT, 20, 20);
 
     if (widget_image_button(origin_button, sim->origin_icon)) {
+        sim->camera_focus = SIMULATOR_ORIGIN;
         sim->camera_pan = (Vector2){0.0f, 0.0f};
         sim->locked_body_index = -1;
         sim->zoom = 1.0f;

@@ -37,6 +37,8 @@ typedef struct {
     Texture2D origin_icon;
 } Simulator;
 
+extern const Vector2 SIMULATOR_ORIGIN;
+
 void simulator_init(Simulator *sim);
 void simulator_deinit(Simulator *sim);
 void simulator_reset(Simulator *sim);
