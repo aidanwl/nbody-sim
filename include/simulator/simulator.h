@@ -23,10 +23,12 @@ typedef struct {
     bool template_menu_open;
     bool advanced_menu_open;
     bool input_blocked;
+    bool controls_blocked;
     bool save_system_requested;
     bool save_prompt_open;
     int requested_template_index;
     int requested_saved_system_index;
+    int delete_saved_system_index;
     int active_template_index;
     int locked_body_index;
     int named_body_index;

@@ -228,6 +228,70 @@ static bool app_load_saved_system(App *app, int saved_index) {
     return false;
 }
 
+static void app_delete_saved_system(int saved_index) {
+    FILE *source = fopen(USER_SYSTEM_FILE, "r");
+    FILE *target = NULL;
+    char line[256];
+    int current_index = -1;
+    int skip_body_lines = 0;
+
+    simulator.delete_saved_system_index = -1;
+
+    if (source == NULL || saved_index < 0) {
+        if (source != NULL) {
+            fclose(source);
+        }
+        return;
+    }
+
+    target = fopen(USER_SYSTEM_FILE ".tmp", "w");
+    if (target == NULL) {
+        fclose(source);
+        return;
+    }
+
+    while (fgets(line, sizeof(line), source) != NULL) {
+        if (skip_body_lines > 0) {
+            skip_body_lines--;
+            continue;
+        }
+
+        if (line[0] == 'S' && line[1] == ' ') {
+            current_index++;
+
+            if (current_index == saved_index) {
+                if (fgets(line, sizeof(line), source) != NULL) {
+                    int body_count = 0;
+
+                    if (sscanf(line, "N %d", &body_count) == 1 && body_count > 0) {
+                        skip_body_lines = body_count;
+                    }
+                }
+                continue;
+            }
+        }
+
+        fputs(line, target);
+    }
+
+    fclose(source);
+    fclose(target);
+
+    if (remove(USER_SYSTEM_FILE) != 0 || rename(USER_SYSTEM_FILE ".tmp", USER_SYSTEM_FILE) != 0) {
+        remove(USER_SYSTEM_FILE ".tmp");
+        app_refresh_saved_systems();
+        return;
+    }
+
+    if (simulator.requested_saved_system_index == saved_index) {
+        simulator.requested_saved_system_index = -1;
+    } else if (simulator.requested_saved_system_index > saved_index) {
+        simulator.requested_saved_system_index--;
+    }
+
+    app_refresh_saved_systems();
+}
+
 // Deletes body and shifts relevant body indicies down by 1
 static void app_delete_body(App *app, int index) {
     if (index < 0 || index >= app->body_count) {
@@ -374,6 +438,10 @@ static bool app_process_requests(App *app) {
         app_save_system(app);
     }
 
+    if (simulator.delete_saved_system_index >= 0) {
+        app_delete_saved_system(simulator.delete_saved_system_index);
+    }
+
     if (simulator.delete_body_index >= 0) {
         app_delete_body(app, simulator.delete_body_index);
         simulator.delete_body_index = -1;
@@ -450,6 +518,7 @@ void app_update(App *app) {
 
 // Main draw function for each frame
 void app_draw(App *app) {
+    simulator.controls_blocked = app->creator.placing;
 
     simulator_draw(
         &simulator,
@@ -459,9 +528,10 @@ void app_draw(App *app) {
         &app->paused,
         app->sim_time_seconds
     );
+
     body_creator_draw_preview(&app->creator);
 
-    if (widget_button(layout_anchor(220, 40, LAYOUT_TOP_LEFT, 20, 180), "New Body")) {
+    if (widget_button(layout_anchor(220, 40, LAYOUT_TOP_LEFT, 20, 180), "New Body") && !app->creator.placing) {
         app->editing_body_index = -1;
         body_creator_start(&app->creator, app->screen_width, app->screen_height);
     }

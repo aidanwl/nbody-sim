@@ -180,10 +180,12 @@ void simulator_reset(Simulator *sim) {
     sim->template_menu_open = false;
     sim->advanced_menu_open = false;
     sim->input_blocked = false;
+    sim->controls_blocked = false;
     sim->save_system_requested = false;
     sim->save_prompt_open = false;
     sim->requested_template_index = -1;
     sim->requested_saved_system_index = -1;
+    sim->delete_saved_system_index = -1;
     sim->locked_body_index = -1;
     sim->named_body_index = -1;
     sim->stats_body_index = -1;
@@ -203,7 +205,7 @@ void simulator_update(Simulator *sim, float frame_dt) {
     simulator_update_camera(sim, frame_dt);
 }
 
-void simulator_draw(Simulator *sim, Body bodies[], int body_count, float *sim_speed, bool *paused, double sim_time_seconds) {
+static void simulator_draw_scene(Simulator *sim, Body bodies[], int body_count) {
     simulator_update_body_lock(sim, bodies, body_count);
     simulator_update_body_name_selection(sim, bodies, body_count);
 
@@ -221,6 +223,10 @@ void simulator_draw(Simulator *sim, Body bodies[], int body_count, float *sim_sp
     
     simulator_draw_bodies(sim, bodies, body_count);
     simulator_draw_body_name(sim, bodies, body_count);
+}
+
+void simulator_draw(Simulator *sim, Body bodies[], int body_count, float *sim_speed, bool *paused, double sim_time_seconds) {
+    simulator_draw_scene(sim, bodies, body_count);
     simulator_draw_controls(sim, bodies, sim_speed, paused, body_count, sim_time_seconds);
 }
 
