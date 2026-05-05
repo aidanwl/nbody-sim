@@ -70,6 +70,7 @@ static void body_creator_reset_draft(BodyCreator *creator, int screen_width, int
     creator->draft.position = (Vector2){screen_width * 0.5f, screen_height * 0.5f};
     creator->draft.velocity = (Vector2){0.0f, 0.0f};
     creator->draft.color = GREEN;
+    creator->editing = false;
     creator->active_input = BODY_CREATOR_INPUT_NONE;
     body_creator_sync_text(creator);
 }
@@ -263,12 +264,14 @@ static void body_creator_draw_numeric_field(
 }
 
 static void body_creator_draw_header(BodyCreator *creator, Rectangle panel, float label_x) {
+    const char *title = creator->editing ? "Edit Body" : "Create Body";
+
     DrawRectangleRec(panel, (Color){30, 30, 30, 235});
     DrawRectangleLinesEx(panel, 2.0f, WHITE);
-    DrawText("Create Body", (int)label_x, (int)(panel.y + 12), 24, WHITE);
+    DrawText(title, (int)label_x, (int)(panel.y + 12), 24, WHITE);
 
     Rectangle center_button = {
-        label_x + (float)MeasureText("Create Body", 24) + 14.0f,
+        label_x + (float)MeasureText(title, 24) + 14.0f,
         panel.y + 10.0f,
         30.0f,
         30.0f
@@ -337,7 +340,7 @@ static void body_creator_draw_color_picker(BodyCreator *creator, Rectangle panel
 }
 
 static bool body_creator_draw_actions(BodyCreator *creator, Rectangle panel) {
-    if (widget_button(panel_rect(panel, 0.68f, 0.12f, 0.25f, 0.085f), "Create")) {
+    if (widget_button(panel_rect(panel, 0.68f, 0.12f, 0.25f, 0.085f), creator->editing ? "Save" : "Create")) {
         creator->open = false;
         creator->placing = false;
         creator->active_input = BODY_CREATOR_INPUT_NONE;
@@ -358,6 +361,7 @@ void body_creator_init(BodyCreator *creator, int screen_width, int screen_height
     creator->placing = false;
     creator->wait_for_release = false;
     creator->center_requested = false;
+    creator->editing = false;
     creator->center_icon = (Texture2D){0};
     body_creator_reset_draft(creator, screen_width, screen_height);
 }
@@ -372,7 +376,19 @@ void body_creator_start(BodyCreator *creator, int screen_width, int screen_heigh
     creator->placing = true;
     creator->wait_for_release = true;
     creator->center_requested = false;
+    creator->editing = false;
     creator->active_input = BODY_CREATOR_INPUT_NONE;
+}
+
+void body_creator_start_edit(BodyCreator *creator, BodyDraft draft) {
+    creator->draft = draft;
+    creator->open = true;
+    creator->placing = false;
+    creator->wait_for_release = false;
+    creator->center_requested = false;
+    creator->editing = true;
+    creator->active_input = BODY_CREATOR_INPUT_NONE;
+    body_creator_sync_text(creator);
 }
 
 bool body_creator_draw(BodyCreator *creator, int screen_width, int screen_height) {

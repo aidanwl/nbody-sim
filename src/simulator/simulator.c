@@ -6,7 +6,7 @@
 const Vector2 SIMULATOR_ORIGIN = {400.0f, 300.0f};
 
 // Converts world coordinates to pixel coordinates
-static Vector2 world_to_screen(const Simulator *sim, Vector2 world_pos) {
+Vector2 simulator_world_to_screen(const Simulator *sim, Vector2 world_pos) {
     Vector2 screen_center = {
         GetScreenWidth() * 0.5f,
         GetScreenHeight() * 0.5f
@@ -77,27 +77,27 @@ static void simulator_draw_trail(const Simulator *sim, const Body *body, Color c
         int a = (body->trail_start + i - step) % TRAIL_MAX;
         int b = (body->trail_start + i) % TRAIL_MAX;
 
-        Vector2 p1 = world_to_screen(sim, body->trail[a]);
-        Vector2 p2 = world_to_screen(sim, body->trail[b]);
+        Vector2 p1 = simulator_world_to_screen(sim, body->trail[a]);
+        Vector2 p2 = simulator_world_to_screen(sim, body->trail[b]);
 
         DrawLineEx(p1, p2, 2.0f, color);
     }
 }
 
 static void simulator_draw_velocity(const Simulator *sim, const Body *body) {
-    Vector2 start = world_to_screen(sim, body->position);
+    Vector2 start = simulator_world_to_screen(sim, body->position);
 
     float scale = 20.0f;
     Vector2 end_world = vec2_vadd(body->position, vec2_vscale(body->velocity, scale));
-    Vector2 end = world_to_screen(sim, end_world);
+    Vector2 end = simulator_world_to_screen(sim, end_world);
 
     DrawLineEx(start, end, 2.0f, RED);
 }
 
 static void simulator_draw_bodies(const Simulator *sim, Body bodies[], int body_count) {
     for (int i = 0; i < body_count; i++) {
-        Vector2 screen_pos = world_to_screen(sim, bodies[i].position);
-        Color color = (i == sim->locked_body_index) ? WHITE : bodies[i].color;
+        Vector2 screen_pos = simulator_world_to_screen(sim, bodies[i].position);
+        Color color = bodies[i].color;
 
         render_body(screen_pos, 5.0f * sim->zoom, color);
     }
@@ -116,7 +116,7 @@ static void simulator_update_body_name_selection(Simulator *sim, Body bodies[], 
     int clicked_body = -1;
 
     for (int i = body_count - 1; i >= 0; i--) {
-        Vector2 screen_pos = world_to_screen(sim, bodies[i].position);
+        Vector2 screen_pos = simulator_world_to_screen(sim, bodies[i].position);
         float radius = 5.0f * sim->zoom;
 
         if (CheckCollisionPointCircle(mouse, screen_pos, radius + 4.0f)) {
@@ -134,7 +134,7 @@ static void simulator_draw_body_name(const Simulator *sim, Body bodies[], int bo
     }
 
     const Body *body = &bodies[sim->named_body_index];
-    Vector2 screen_pos = world_to_screen(sim, body->position);
+    Vector2 screen_pos = simulator_world_to_screen(sim, body->position);
     int font_size = 20;
     int text_width = MeasureText(body->name, font_size);
 
@@ -180,16 +180,22 @@ void simulator_reset(Simulator *sim) {
     sim->template_menu_open = false;
     sim->advanced_menu_open = false;
     sim->input_blocked = false;
+    sim->save_system_requested = false;
+    sim->save_prompt_open = false;
     sim->requested_template_index = -1;
+    sim->requested_saved_system_index = -1;
     sim->locked_body_index = -1;
     sim->named_body_index = -1;
     sim->stats_body_index = -1;
     sim->delete_body_index = -1;
+    sim->edit_body_index = -1;
+    sim->save_system_name[0] = '\0';
 }
 
 void simulator_init(Simulator *sim) {
     sim->origin_icon = LoadTexture(FileExists("assets/origin.png") ? "assets/origin.png" : "../assets/origin.png");
     sim->active_template_index = 0;
+    sim->saved_system_count = 0;
     simulator_reset(sim);
 }
 
@@ -197,16 +203,14 @@ void simulator_update(Simulator *sim, float frame_dt) {
     simulator_update_camera(sim, frame_dt);
 }
 
-void simulator_draw(Simulator *sim, Body bodies[], int body_count, float *sim_speed, bool *paused) {
+void simulator_draw(Simulator *sim, Body bodies[], int body_count, float *sim_speed, bool *paused, double sim_time_seconds) {
     simulator_update_body_lock(sim, bodies, body_count);
     simulator_update_body_name_selection(sim, bodies, body_count);
 
     if (sim->path_mode != PATH_MODE_OFF || sim->show_current_trajectory) {
         for (int i = 0; i < body_count; i++) {
             if (sim->path_mode != PATH_MODE_OFF) {
-                Color color = (i == sim->locked_body_index) ? WHITE : bodies[i].color;
-
-                simulator_draw_trail(sim, &bodies[i], color);
+                simulator_draw_trail(sim, &bodies[i], bodies[i].color);
             }   
             if (sim->show_current_trajectory) {
                 simulator_draw_velocity(sim, &bodies[i]);
@@ -217,7 +221,7 @@ void simulator_draw(Simulator *sim, Body bodies[], int body_count, float *sim_sp
     
     simulator_draw_bodies(sim, bodies, body_count);
     simulator_draw_body_name(sim, bodies, body_count);
-    simulator_draw_controls(sim, bodies, sim_speed, paused, body_count);
+    simulator_draw_controls(sim, bodies, sim_speed, paused, body_count, sim_time_seconds);
 }
 
 void simulator_deinit(Simulator *sim) {

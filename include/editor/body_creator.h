@@ -17,6 +17,7 @@ typedef struct {
     bool placing;
     bool wait_for_release;
     bool center_requested;
+    bool editing;
     int active_input;
     Texture2D center_icon;
     BodyDraft draft;
@@ -29,6 +30,7 @@ typedef struct {
 void body_creator_init(BodyCreator *creator, int screen_width, int screen_height);
 void body_creator_set_center_icon(BodyCreator *creator, Texture2D icon);
 void body_creator_start(BodyCreator *creator, int screen_width, int screen_height);
+void body_creator_start_edit(BodyCreator *creator, BodyDraft draft);
 bool body_creator_draw(BodyCreator *creator, int screen_width, int screen_height);
 void body_creator_draw_preview(const BodyCreator *creator);
 bool body_creator_blocks_movement(const BodyCreator *creator);

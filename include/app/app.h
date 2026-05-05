@@ -13,6 +13,7 @@ typedef struct {
 
     float dt;
     float sim_speed;
+    double sim_time_seconds;
     bool paused;
 
     int screen_width;
@@ -21,6 +22,8 @@ typedef struct {
     BodyCreator creator;
     BodyDraft pending_body;
     bool add_body_requested;
+    bool edit_body_requested;
+    int editing_body_index;
 } App;
 
 void app_init(App *app, int screen_width, int screen_height);

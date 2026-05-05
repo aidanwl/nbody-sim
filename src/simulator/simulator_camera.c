@@ -5,7 +5,7 @@
 // Move camera around with WASD and mouse
 void simulator_update_camera(Simulator *sim, float frame_dt) {
     const float pan_speed = 300.0f * frame_dt;
-    const float zoom_speed = 1.0f;
+    const float zoom_speed = 0.25f;
 
     if (sim->locked_body_index < 0 && !sim->input_blocked) {
         if (IsKeyDown(KEY_W)) {
@@ -30,9 +30,9 @@ void simulator_update_camera(Simulator *sim, float frame_dt) {
     float wheel = sim->input_blocked ? 0.0f : GetMouseWheelMove();
 
     if (wheel > 0.0f) {
-        sim->zoom *= (1.0f + zoom_speed * frame_dt);
+        sim->zoom *= 1.0f + zoom_speed * wheel;
     } else if (wheel < 0.0f) {
-        sim->zoom /= (1.0f + zoom_speed * frame_dt);
+        sim->zoom /= 1.0f + zoom_speed * -wheel;
     }
 
     if (sim->zoom < 0.1f) {

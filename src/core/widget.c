@@ -18,6 +18,11 @@ bool widget_button(Rectangle bounds, const char *text) {
     int font_size = 20;
     int text_width = MeasureText(text, font_size);
 
+    while (font_size > 10 && text_width > bounds.width - 12.0f) {
+        font_size--;
+        text_width = MeasureText(text, font_size);
+    }
+
     int text_x = (int)(bounds.x + (bounds.width - text_width) * 0.5f);
     int text_y = (int)(bounds.y + (bounds.height - font_size) * 0.5f);
 
@@ -49,6 +54,12 @@ bool widget_toggle(Rectangle bounds, const char *text, bool value) {
 
     int font_size = 20;
     int text_width = MeasureText(text, font_size);
+
+    while (font_size > 10 && text_width > bounds.width - 12.0f) {
+        font_size--;
+        text_width = MeasureText(text, font_size);
+    }
+
     int text_x = (int)(bounds.x + (bounds.width - text_width) * 0.5f);
     int text_y = (int)(bounds.y + (bounds.height - font_size) * 0.5f);
 
@@ -63,7 +74,7 @@ static float clampf(float x, float min, float max) {
     return x;
 }
 
-float widget_slider(Rectangle bounds, float min, float max, float value, const char *label) {
+float widget_slider_format(Rectangle bounds, float min, float max, float value, const char *label, const char *value_format) {
     static bool has_active_slider = false;
     static Rectangle active_slider = {0};
     Vector2 mouse = GetMousePosition();
@@ -120,10 +131,14 @@ float widget_slider(Rectangle bounds, float min, float max, float value, const c
     DrawRectangleLinesEx(knob, 1.0f, BLACK);
 
     char value_text[64];
-    snprintf(value_text, sizeof(value_text), "%.3f", value);
+    snprintf(value_text, sizeof(value_text), value_format, value);
     DrawText(value_text, (int)(bounds.x + bounds.width + 12), (int)(bounds.y + 2), 20, WHITE);
 
     return value;
+}
+
+float widget_slider(Rectangle bounds, float min, float max, float value, const char *label) {
+    return widget_slider_format(bounds, min, max, value, label, "%.3f");
 }
 
 bool widget_dropdown(Rectangle bounds, const char *text, bool open) {

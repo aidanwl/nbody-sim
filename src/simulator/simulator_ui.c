@@ -2,6 +2,7 @@
 #include "simulator/simulator_templates.h"
 
 #include <stddef.h>
+#include <string.h>
 
 #include "core/widget.h"
 #include "core/layout.h"
@@ -23,7 +24,7 @@ static Rectangle simulator_panel_row(Rectangle panel, int index, float width) {
 }
 
 static void simulator_draw_options(Simulator *sim) {
-    Rectangle panel = layout_anchor(220, 170, LAYOUT_TOP_RIGHT, 20, 120);
+    Rectangle panel = layout_anchor(220, 130, LAYOUT_TOP_RIGHT, 20, 62);
     const char *path_label = "Paths: Off";
 
     switch (sim->path_mode) {
@@ -46,25 +47,45 @@ static void simulator_draw_options(Simulator *sim) {
     DrawText("Options", panel.x + 10, panel.y + 10, 20, WHITE);
 
     if (widget_button(
-        layout_relative(panel, 0.05f, 0.30f, 0.90f, 0.18f),
+        layout_relative(panel, 0.05f, 0.34f, 0.90f, 0.22f),
         path_label
     )) {
         sim->path_mode = (PathMode)((sim->path_mode + 1) % 4);
     }
 
     sim->show_current_trajectory = widget_toggle(
-        layout_relative(panel, 0.05f, 0.55f, 0.90f, 0.18f),
+        layout_relative(panel, 0.05f, 0.64f, 0.90f, 0.22f),
         "Velocity Vectors",
         sim->show_current_trajectory
     );
 }
 
+static void simulator_draw_time_display(double sim_time_seconds) {
+    long long total_seconds = (long long)sim_time_seconds;
+    long long hours = total_seconds / 3600;
+    long long minutes = (total_seconds / 60) % 60;
+    long long seconds = total_seconds % 60;
+    Rectangle panel = layout_anchor(220, 34, LAYOUT_TOP_RIGHT, 20, 20);
+
+    DrawRectangleRec(panel, (Color){30, 30, 30, 210});
+    DrawRectangleLinesEx(panel, 2.0f, WHITE);
+    DrawText(
+        TextFormat("Time: %02lld:%02lld:%02lld", hours, minutes, seconds),
+        (int)(panel.x + 10),
+        (int)(panel.y + 7),
+        20,
+        WHITE
+    );
+}
+
 static void simulator_draw_speed_control(Simulator *sim, float *sim_speed) {
     Rectangle button = layout_anchor(86, 34, LAYOUT_BOTTOM_RIGHT, 20, 20);
-    Rectangle presets = layout_anchor(230, 30, LAYOUT_BOTTOM_RIGHT, 116, 22);
-    Rectangle slider_panel = layout_anchor(230, 74, LAYOUT_BOTTOM_RIGHT, 20, 62);
-    const float preset_values[] = {0.5f, 1.0f, 2.0f, 5.0f, 20.0f};
-    const char *preset_labels[] = {"x.5", "x1", "x2", "x5", "x20"};
+    Rectangle presets = layout_anchor(248, 30, LAYOUT_BOTTOM_RIGHT, 62, 22);
+    Rectangle slider_panel = layout_anchor(260, 74, LAYOUT_BOTTOM_RIGHT, 20, 62);
+    const float preset_values[] = {1.0f, 10.0f, 25.0f, 100.0f};
+    const char *preset_labels[] = {"x1", "x10", "x25", "x100"};
+    const int preset_keys[] = {KEY_ONE, KEY_TWO, KEY_THREE, KEY_FOUR};
+    const int preset_keypad_keys[] = {KEY_KP_1, KEY_KP_2, KEY_KP_3, KEY_KP_4};
 
     if (widget_button(button, "Speed")) {
         sim->speed_slider_open = !sim->speed_slider_open;
@@ -74,12 +95,13 @@ static void simulator_draw_speed_control(Simulator *sim, float *sim_speed) {
         DrawRectangleRec(slider_panel, (Color){30, 30, 30, 220});
         DrawRectangleLinesEx(slider_panel, 2.0f, WHITE);
 
-        *sim_speed = widget_slider(
+        *sim_speed = widget_slider_format(
             layout_relative(slider_panel, 0.08f, 0.55f, 0.55f, 0.20f),
             0.0f,
-            20.0f,
+            100.0f,
             *sim_speed,
-            "Speed"
+            "Speed",
+            "x%.1f"
         );
     }
 
@@ -90,9 +112,89 @@ static void simulator_draw_speed_control(Simulator *sim, float *sim_speed) {
     for (int i = 0; i < preset_count; i++) {
         Rectangle preset_button = layout_relative(presets, i * (w + gap), 0.0f, w, 1.0f);
 
-        if (widget_button(preset_button, preset_labels[i])) {
+        if (widget_button(preset_button, preset_labels[i]) ||
+            (!sim->input_blocked && (IsKeyPressed(preset_keys[i]) || IsKeyPressed(preset_keypad_keys[i])))) {
             *sim_speed = preset_values[i];
         }
+    }
+}
+
+static bool simulator_text_has_visible_char(const char *text) {
+    for (int i = 0; text[i] != '\0'; i++) {
+        if (text[i] != ' ' && text[i] != '\t') {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static void simulator_update_save_name_input(Simulator *sim) {
+    int len = (int)strlen(sim->save_system_name);
+    int key = GetCharPressed();
+
+    while (key > 0) {
+        bool allowed = key >= 32 && key <= 126;
+
+        if (allowed && len < (int)sizeof(sim->save_system_name) - 1) {
+            sim->save_system_name[len++] = (char)key;
+            sim->save_system_name[len] = '\0';
+        }
+
+        key = GetCharPressed();
+    }
+
+    if (IsKeyPressed(KEY_BACKSPACE) && len > 0) {
+        sim->save_system_name[len - 1] = '\0';
+    }
+}
+
+static void simulator_open_save_prompt(Simulator *sim) {
+    sim->save_system_name[0] = '\0';
+    sim->save_prompt_open = true;
+    sim->template_menu_open = false;
+}
+
+static void simulator_draw_save_prompt(Simulator *sim) {
+    if (!sim->save_prompt_open) {
+        return;
+    }
+
+    Rectangle panel = layout_anchor(300, 150, LAYOUT_BOTTOM_LEFT, 210, 60);
+    Rectangle input = layout_relative(panel, 0.06f, 0.34f, 0.88f, 0.25f);
+    Rectangle confirm = layout_relative(panel, 0.06f, 0.70f, 0.42f, 0.20f);
+    Rectangle cancel = layout_relative(panel, 0.52f, 0.70f, 0.42f, 0.20f);
+
+    simulator_update_save_name_input(sim);
+
+    DrawRectangleRec(panel, (Color){30, 30, 30, 240});
+    DrawRectangleLinesEx(panel, 2.0f, WHITE);
+    DrawText("Save System", (int)(panel.x + 12), (int)(panel.y + 12), 20, WHITE);
+    DrawText("Name", (int)input.x, (int)(input.y - 20), 16, WHITE);
+    DrawRectangleRec(input, RAYWHITE);
+    DrawRectangleLinesEx(input, 2.0f, SKYBLUE);
+
+    int font_size = 20;
+    int text_width = MeasureText(sim->save_system_name, font_size);
+
+    while (font_size > 10 && text_width > input.width - 16.0f) {
+        font_size--;
+        text_width = MeasureText(sim->save_system_name, font_size);
+    }
+
+    DrawText(sim->save_system_name, (int)(input.x + 8), (int)(input.y + (input.height - font_size) * 0.5f), font_size, BLACK);
+
+    bool can_save = simulator_text_has_visible_char(sim->save_system_name);
+    bool confirm_clicked = widget_button(confirm, "Confirm");
+
+    if (can_save && (confirm_clicked || IsKeyPressed(KEY_ENTER))) {
+        sim->save_system_requested = true;
+        sim->save_prompt_open = false;
+        sim->template_menu_open = true;
+    }
+
+    if (widget_button(cancel, "Cancel") || IsKeyPressed(KEY_ESCAPE)) {
+        sim->save_prompt_open = false;
     }
 }
 
@@ -108,17 +210,16 @@ static void simulator_draw_navigation(Simulator *sim) {
 }
 
 static void simulator_draw_templates_menu(Simulator *sim) {
-    Rectangle menu_button = layout_anchor(140, 40, LAYOUT_TOP_RIGHT, 20, 20);
-    Rectangle reset_button = layout_anchor(140, 40, LAYOUT_TOP_RIGHT, 20, 70);
+    Rectangle menu_button = layout_anchor(140, 30, LAYOUT_BOTTOM_LEFT, 60, 20);
+    Rectangle save_button = layout_anchor(140, 30, LAYOUT_BOTTOM_LEFT, 210, 20);
 
     if (widget_button(menu_button, "Templates")) {
         sim->template_menu_open = !sim->template_menu_open;
         sim->body_menu_open = false;
     }
 
-    if (widget_button(reset_button, "Reset")) {
-        sim->requested_template_index = sim->active_template_index;
-        sim->template_menu_open = false;
+    if (widget_button(save_button, "Save")) {
+        simulator_open_save_prompt(sim);
     }
 
     if (!sim->template_menu_open) {
@@ -126,7 +227,8 @@ static void simulator_draw_templates_menu(Simulator *sim) {
     }
 
     int template_count = simulator_template_count();
-    Rectangle panel = layout_anchor(240, 50.0f + template_count * 34.0f, LAYOUT_TOP_RIGHT, 20, 120);
+    int row_count = template_count + sim->saved_system_count;
+    Rectangle panel = layout_anchor(260, 50.0f + row_count * 34.0f, LAYOUT_BOTTOM_LEFT, 60, 60);
 
     simulator_draw_panel(panel, "Templates");
 
@@ -145,6 +247,15 @@ static void simulator_draw_templates_menu(Simulator *sim) {
 
         if (widget_button(button, label)) {
             sim->requested_template_index = i;
+            sim->template_menu_open = false;
+        }
+    }
+
+    for (int i = 0; i < sim->saved_system_count; i++) {
+        Rectangle button = simulator_panel_row(panel, template_count + i, panel.width - 20.0f);
+
+        if (widget_button(button, sim->saved_system_names[i])) {
+            sim->requested_saved_system_index = i;
             sim->template_menu_open = false;
         }
     }
@@ -168,7 +279,7 @@ static void simulator_draw_body_stats(const Body *body, Rectangle panel, float *
 }
 
 static void simulator_draw_advanced_menu(Simulator *sim, Body bodies[], int body_count) {
-    Rectangle menu_button = layout_anchor(220, 40, LAYOUT_TOP_RIGHT, 20, 310);
+    Rectangle menu_button = layout_anchor(220, 40, LAYOUT_TOP_RIGHT, 20, 202);
 
     if (widget_button(menu_button, "Advanced")) {
         sim->advanced_menu_open = !sim->advanced_menu_open;
@@ -195,7 +306,7 @@ static void simulator_draw_advanced_menu(Simulator *sim, Body bodies[], int body
         }
     }
 
-    Rectangle panel = layout_anchor(300, panel_height, LAYOUT_TOP_RIGHT, 20, 360);
+    Rectangle panel = layout_anchor(300, panel_height, LAYOUT_TOP_RIGHT, 20, 252);
     float cursor_y = panel.y + 40.0f;
 
     simulator_draw_panel(panel, "Body Stats");
@@ -247,24 +358,52 @@ static void simulator_draw_body_lock_menu(Simulator *sim, Body bodies[], int bod
     }
 
     float panel_height = 50.0f + body_count * 34.0f;
-    Rectangle panel = layout_anchor(240, panel_height, LAYOUT_TOP_LEFT, 170, 20);
+    Rectangle panel = layout_anchor(340, panel_height, LAYOUT_TOP_LEFT, 170, 20);
 
     simulator_draw_panel(panel, "Bodies");
 
     for (int i = 0; i < body_count; i++) {
-        Rectangle lock_button = simulator_panel_row(panel, i, panel.width - 64.0f);
+        Rectangle lock_button = simulator_panel_row(panel, i, panel.width - 116.0f);
+        Rectangle edit_button = {
+            panel.x + panel.width - 96.0f,
+            lock_button.y,
+            38.0f,
+            lock_button.height
+        };
         Rectangle delete_button = {
             panel.x + panel.width - 48.0f,
             lock_button.y,
             38.0f,
             lock_button.height
         };
-        const char *label = TextFormat("%s  m=%.1f", bodies[i].name, bodies[i].mass);
+        Rectangle color_chip = {
+            lock_button.x + 6.0f,
+            lock_button.y + 6.0f,
+            16.0f,
+            lock_button.height - 12.0f
+        };
+        Rectangle name_button = {
+            lock_button.x + 28.0f,
+            lock_button.y,
+            lock_button.width - 28.0f,
+            lock_button.height
+        };
+        const char *label = TextFormat("%s m=%.1f", bodies[i].name, bodies[i].mass);
 
-        if (widget_button(lock_button, label)) {
+        DrawRectangleRec(lock_button, RAYWHITE);
+        DrawRectangleLinesEx(lock_button, 2.0f, BLACK);
+        DrawRectangleRec(color_chip, bodies[i].color);
+        DrawRectangleLinesEx(color_chip, 1.0f, BLACK);
+
+        if (widget_button(name_button, label)) {
             sim->locked_body_index = i;
             sim->camera_focus = bodies[i].position;
             sim->camera_pan = (Vector2){0.0f, 0.0f};
+            sim->body_menu_open = false;
+        }
+
+        if (widget_button(edit_button, "Edit")) {
+            sim->edit_body_index = i;
             sim->body_menu_open = false;
         }
 
@@ -274,20 +413,27 @@ static void simulator_draw_body_lock_menu(Simulator *sim, Body bodies[], int bod
     }
 }
 
-void simulator_draw_controls(Simulator *sim, Body bodies[], float *sim_speed, bool *paused, int body_count) {
+void simulator_draw_controls(Simulator *sim, Body bodies[], float *sim_speed, bool *paused, int body_count, double sim_time_seconds) {
     *paused = widget_toggle(
         layout_anchor(140, 40, LAYOUT_TOP_LEFT, 20, 80),
         "Paused",
         *paused
     );
 
+    if (widget_button(layout_anchor(140, 40, LAYOUT_TOP_LEFT, 170, 80), "Reset")) {
+        sim->requested_template_index = sim->active_template_index;
+        sim->template_menu_open = false;
+    }
+
+    simulator_draw_time_display(sim_time_seconds);
     simulator_draw_options(sim);
     simulator_draw_templates_menu(sim);
     simulator_draw_advanced_menu(sim, bodies, body_count);
     simulator_draw_speed_control(sim, sim_speed);
     simulator_draw_navigation(sim);
     simulator_draw_body_lock_menu(sim, bodies, body_count);
+    simulator_draw_save_prompt(sim);
 
-    DrawText(TextFormat("Speed: %.2fx", *sim_speed), 20, 140, 20, WHITE);
-    DrawText(TextFormat("Bodies: %d", body_count), 20, 170, 20, WHITE);
+    DrawText(TextFormat("Speed: %.2fx", *sim_speed), 30, 150, 20, WHITE);
+    DrawText(TextFormat("Bodies: %d", body_count), 30, 180, 20, WHITE);
 }

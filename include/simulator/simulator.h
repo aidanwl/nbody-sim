@@ -23,12 +23,19 @@ typedef struct {
     bool template_menu_open;
     bool advanced_menu_open;
     bool input_blocked;
+    bool save_system_requested;
+    bool save_prompt_open;
     int requested_template_index;
+    int requested_saved_system_index;
     int active_template_index;
     int locked_body_index;
     int named_body_index;
     int stats_body_index;
     int delete_body_index;
+    int edit_body_index;
+    int saved_system_count;
+    char saved_system_names[16][32];
+    char save_system_name[32];
 
     Vector2 camera_focus;
     
@@ -45,12 +52,13 @@ void simulator_reset(Simulator *sim);
 
 void simulator_update(Simulator *sim, float frame_dt);
 
-void simulator_draw(Simulator *sim, Body bodies[], int body_count, float *sim_speed, bool *paused);
+void simulator_draw(Simulator *sim, Body bodies[], int body_count, float *sim_speed, bool *paused, double sim_time_seconds);
 
 void simulator_update_camera(Simulator *sim, float frame_dt);
 
-void simulator_draw_controls(Simulator *sim, Body bodies[], float *sim_speed, bool *paused, int body_count);
+void simulator_draw_controls(Simulator *sim, Body bodies[], float *sim_speed, bool *paused, int body_count, double sim_time_seconds);
 Vector2 simulator_screen_to_world(const Simulator *sim, Vector2 screen_pos);
+Vector2 simulator_world_to_screen(const Simulator *sim, Vector2 world_pos);
 void simulator_center_on_world(Simulator *sim, Vector2 world_pos);
 
 #endif
