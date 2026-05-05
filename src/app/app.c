@@ -6,6 +6,7 @@
 #include "raylib.h"
 
 #include "core/simulation.h"
+#include "core/layout.h"
 #include "editor/body_creator.h"
 #include "simulator/simulator.h"
 #include "simulator/simulator_templates.h"
@@ -460,7 +461,7 @@ void app_draw(App *app) {
     );
     body_creator_draw_preview(&app->creator);
 
-    if (widget_button((Rectangle){20, 230, 140, 40}, "New Body")) {
+    if (widget_button(layout_anchor(220, 40, LAYOUT_TOP_LEFT, 20, 180), "New Body")) {
         app->editing_body_index = -1;
         body_creator_start(&app->creator, app->screen_width, app->screen_height);
     }
