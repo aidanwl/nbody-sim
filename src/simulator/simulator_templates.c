@@ -2,6 +2,7 @@
 
 #include <stddef.h>
 
+// Built-in starting systems. Positions are centered around SIMULATOR_ORIGIN.
 static const Body binary_system_bodies[] = {
     {
         .name = "Star A",
@@ -159,6 +160,7 @@ static const Body lagrange_point_bodies[] = {
     }
 };
 
+// Master template table used by the Templates menu.
 static const SimulatorTemplate templates[] = {
     {
         .name = "Empty",
@@ -187,10 +189,12 @@ static const SimulatorTemplate templates[] = {
     }
 };
 
+// Returns the number of built-in templates.
 int simulator_template_count(void) {
     return (int)(sizeof(templates) / sizeof(templates[0]));
 }
 
+// Returns a template by index, or NULL for invalid indices.
 const SimulatorTemplate *simulator_template_get(int index) {
     if (index < 0 || index >= simulator_template_count()) {
         return NULL;
@@ -199,6 +203,7 @@ const SimulatorTemplate *simulator_template_get(int index) {
     return &templates[index];
 }
 
+// Copies template bodies into the app's live body array and clears runtime-only state.
 int simulator_template_copy_bodies(int index, Body bodies[], int max_bodies) {
     const SimulatorTemplate *sim_template = simulator_template_get(index);
 
@@ -214,6 +219,7 @@ int simulator_template_copy_bodies(int index, Body bodies[], int max_bodies) {
 
     for (int i = 0; i < body_count; i++) {
         bodies[i] = sim_template->bodies[i];
+        // Force and trail fields must start clean every time a template is loaded.
         bodies[i].force = (Vector2){0.0f, 0.0f};
         bodies[i].trail_count = 0;
         bodies[i].trail_start = 0;

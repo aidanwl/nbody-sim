@@ -29,16 +29,19 @@ typedef struct {
     Rectangle velocity_y_slider;
 } BodyCreatorLayout;
 
+// Local clamp used by text parsing so typed values stay inside slider ranges.
 static float clampf(float x, float min, float max) {
     if (x < min) return min;
     if (x > max) return max;
     return x;
 }
 
+// Checks whether a text buffer already contains a specific character.
 static bool text_has_char(const char *text, char target) {
     return strchr(text, target) != NULL;
 }
 
+// Allows digits, one leading minus sign, and one decimal point for numeric textboxes.
 static bool numeric_key_allowed(char key, const char *buffer, int len) {
     if (key >= '0' && key <= '9') {
         return true;
@@ -70,6 +73,7 @@ static void body_creator_reset_draft(BodyCreator *creator, int screen_width, int
     creator->draft.position = (Vector2){screen_width * 0.5f, screen_height * 0.5f};
     creator->draft.velocity = (Vector2){0.0f, 0.0f};
     creator->draft.color = GREEN;
+    // Reset interaction state so stale edit/input state does not carry into a new body.
     creator->editing = false;
     creator->active_input = BODY_CREATOR_INPUT_NONE;
     body_creator_sync_text(creator);
@@ -82,6 +86,7 @@ static void draw_text_input(Rectangle bounds, const char *label, char *buffer, i
     bool active = creator->active_input == input_id;
 
     if (hovered && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        // Only one textbox can receive keyboard input at a time.
         creator->active_input = input_id;
     }
 
@@ -101,6 +106,7 @@ static void draw_text_input(Rectangle bounds, const char *label, char *buffer, i
         bool allowed = key >= 32 && key <= 126;
 
         if (numeric_only) {
+            // Numeric boxes filter input before it enters the buffer.
             allowed = numeric_key_allowed((char)key, buffer, len);
         }
 
@@ -116,6 +122,7 @@ static void draw_text_input(Rectangle bounds, const char *label, char *buffer, i
     }
 
     if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_TAB)) {
+        // Enter/Tab commits the current text and leaves typing mode.
         creator->active_input = BODY_CREATOR_INPUT_NONE;
     }
 }
@@ -126,6 +133,7 @@ static float parse_float_input(const char *text, float fallback, float min, floa
     float value = strtof(text, &end);
 
     if (end == text) {
+        // If the text is empty or invalid, keep the previous numeric value.
         return fallback;
     }
 
@@ -138,6 +146,7 @@ static Color color_with_alpha(Color color, unsigned char alpha) {
     return color;
 }
 
+// Helper for clearing active input when clicking outside the editor fields.
 static bool rect_contains_mouse(Rectangle bounds) {
     return CheckCollisionPointRec(GetMousePosition(), bounds);
 }
@@ -163,6 +172,7 @@ static Rectangle body_creator_panel_bounds(int screen_width, int screen_height) 
     float available_height = screen_height - top - margin;
     float height = available_height;
 
+    // Keep the panel usable on small windows without letting it grow too wide.
     if (width < 360.0f) {
         width = 360.0f;
     }
@@ -183,6 +193,7 @@ static Rectangle body_creator_panel_bounds(int screen_width, int screen_height) 
     return (Rectangle){margin, top, width, height};
 }
 
+// Creates a rectangle using panel-relative percentages.
 static Rectangle panel_rect(Rectangle panel, float x, float y, float width, float height) {
     return (Rectangle){
         panel.x + panel.width * x,
@@ -192,6 +203,7 @@ static Rectangle panel_rect(Rectangle panel, float x, float y, float width, floa
     };
 }
 
+// Calculates all editor widget rectangles from the current panel size.
 static BodyCreatorLayout body_creator_layout(int screen_width, int screen_height) {
     BodyCreatorLayout layout = {0};
 
@@ -207,12 +219,14 @@ static BodyCreatorLayout body_creator_layout(int screen_width, int screen_height
     return layout;
 }
 
+// Handles the click-to-place state before the editor panel opens.
 static bool body_creator_handle_placement(BodyCreator *creator) {
     if (!creator->placing) {
         return false;
     }
 
     if (creator->wait_for_release) {
+        // Prevent the button click that opened placement mode from also placing the body.
         if (!IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
             creator->wait_for_release = false;
         }
@@ -220,6 +234,7 @@ static bool body_creator_handle_placement(BodyCreator *creator) {
     }
 
     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        // Store the screen position first; app.c converts it to world coordinates later.
         creator->draft.position = GetMousePosition();
         creator->placing = false;
         creator->open = true;
@@ -246,6 +261,7 @@ static void body_creator_clear_input_on_outside_click(BodyCreator *creator, Rect
     creator->active_input = BODY_CREATOR_INPUT_NONE;
 }
 
+// Draws a textbox plus matching slider and keeps both representations synchronized.
 static void body_creator_draw_numeric_field(
     BodyCreator *creator,
     Rectangle input,
@@ -259,10 +275,13 @@ static void body_creator_draw_numeric_field(
     float *value
 ) {
     draw_text_input(input, label, text, text_size, input_id, true, creator);
+    // Text is parsed first so typing changes the slider value.
     *value = parse_float_input(text, *value, min, max);
+    // Slider is applied second so dragging can update the numeric value.
     *value = widget_slider(slider, min, max, *value, label);
 }
 
+// Draws the body creator panel header and optional center-on-body icon.
 static void body_creator_draw_header(BodyCreator *creator, Rectangle panel, float label_x) {
     const char *title = creator->editing ? "Edit Body" : "Create Body";
 
@@ -278,10 +297,12 @@ static void body_creator_draw_header(BodyCreator *creator, Rectangle panel, floa
     };
 
     if (creator->center_icon.id != 0 && widget_image_button(center_button, creator->center_icon)) {
+        // app.c handles the camera movement because it owns simulator state.
         creator->center_requested = true;
     }
 }
 
+// Draws name, mass, and velocity inputs and writes them into the draft.
 static void body_creator_draw_fields(BodyCreator *creator, BodyCreatorLayout layout) {
     draw_text_input(layout.name_input, "Name", creator->name_text, sizeof(creator->name_text), BODY_CREATOR_INPUT_NAME, false, creator);
     snprintf(creator->draft.name, sizeof(creator->draft.name), "%s", creator->name_text[0] == '\0' ? "Unnamed" : creator->name_text);
@@ -326,10 +347,12 @@ static void body_creator_draw_fields(BodyCreator *creator, BodyCreatorLayout lay
     );
 
     if (creator->active_input == BODY_CREATOR_INPUT_NONE && IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+        // When dragging sliders, refresh text so the typed values match the slider values.
         body_creator_sync_text(creator);
     }
 }
 
+// Draws color choices and updates the draft color.
 static void body_creator_draw_color_picker(BodyCreator *creator, Rectangle panel, float label_x) {
     DrawText("Color", (int)label_x, (int)(panel.y + panel.height * 0.82f), 18, WHITE);
     draw_color_swatch(creator, panel_rect(panel, 0.06f, 0.88f, 0.08f, 0.07f), GREEN);
@@ -339,6 +362,7 @@ static void body_creator_draw_color_picker(BodyCreator *creator, Rectangle panel
     draw_color_swatch(creator, panel_rect(panel, 0.50f, 0.88f, 0.08f, 0.07f), VIOLET);
 }
 
+// Draws Create/Save and Cancel buttons; returns true when a body should be committed.
 static bool body_creator_draw_actions(BodyCreator *creator, Rectangle panel) {
     if (widget_button(panel_rect(panel, 0.68f, 0.12f, 0.25f, 0.085f), creator->editing ? "Save" : "Create")) {
         creator->open = false;
@@ -357,6 +381,7 @@ static bool body_creator_draw_actions(BodyCreator *creator, Rectangle panel) {
 }
 
 void body_creator_init(BodyCreator *creator, int screen_width, int screen_height) {
+    // Initialize all interaction flags before resetting the draft values.
     creator->open = false;
     creator->placing = false;
     creator->wait_for_release = false;
@@ -366,10 +391,12 @@ void body_creator_init(BodyCreator *creator, int screen_width, int screen_height
     body_creator_reset_draft(creator, screen_width, screen_height);
 }
 
+// Supplies the reusable origin/center icon loaded by the simulator.
 void body_creator_set_center_icon(BodyCreator *creator, Texture2D icon) {
     creator->center_icon = icon;
 }
 
+// Starts new-body flow by entering placement mode instead of opening the panel immediately.
 void body_creator_start(BodyCreator *creator, int screen_width, int screen_height) {
     body_creator_reset_draft(creator, screen_width, screen_height);
     creator->open = false;
@@ -380,6 +407,7 @@ void body_creator_start(BodyCreator *creator, int screen_width, int screen_heigh
     creator->active_input = BODY_CREATOR_INPUT_NONE;
 }
 
+// Starts edit flow by opening the panel immediately with the selected body's values.
 void body_creator_start_edit(BodyCreator *creator, BodyDraft draft) {
     creator->draft = draft;
     creator->open = true;
@@ -391,6 +419,7 @@ void body_creator_start_edit(BodyCreator *creator, BodyDraft draft) {
     body_creator_sync_text(creator);
 }
 
+// Draws the body creator interaction and returns true when Create/Save is clicked.
 bool body_creator_draw(BodyCreator *creator, int screen_width, int screen_height) {
     if (body_creator_handle_placement(creator)) {
         return false;
@@ -406,6 +435,7 @@ bool body_creator_draw(BodyCreator *creator, int screen_width, int screen_height
     Rectangle inputs[] = {layout.name_input, layout.mass_input, layout.velocity_x_input, layout.velocity_y_input};
 
     body_creator_clear_input_on_outside_click(creator, inputs, 4);
+    // Draw order matters: panel background first, fields/actions on top.
     body_creator_draw_header(creator, panel, label_x);
     body_creator_draw_fields(creator, layout);
     body_creator_draw_color_picker(creator, panel, label_x);
@@ -415,6 +445,7 @@ bool body_creator_draw(BodyCreator *creator, int screen_width, int screen_height
 // Draws body location and velocity vector when creating
 void body_creator_draw_preview(const BodyCreator *creator) {
     if (creator->placing) {
+        // While placing, preview follows the mouse before the final click.
         DrawCircleV(GetMousePosition(), 6.0f, color_with_alpha(GREEN, 130));
         return;
     }
@@ -426,6 +457,7 @@ void body_creator_draw_preview(const BodyCreator *creator) {
     render_body(creator->draft.position, 6.0f, creator->draft.color);
 
     Vector2 end = {
+        // Scale velocity for visibility so small simulation speeds are still noticeable.
         creator->draft.position.x + creator->draft.velocity.x * 10.0f,
         creator->draft.position.y + creator->draft.velocity.y * 10.0f
     };
@@ -435,5 +467,6 @@ void body_creator_draw_preview(const BodyCreator *creator) {
 
 // Stops interaction with simulator when using body creator
 bool body_creator_blocks_movement(const BodyCreator *creator) {
+    // Any open/placing/text-entry state should stop camera movement and simulator shortcuts.
     return creator->open || creator->placing || creator->active_input != BODY_CREATOR_INPUT_NONE;
 }

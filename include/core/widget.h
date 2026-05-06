@@ -3,6 +3,7 @@
 
 #include "raylib.h"
 
+// Basic immediate-mode UI widgets. Each function draws itself and returns new input state.
 bool widget_button(Rectangle bounds, const char *text);
 bool widget_toggle(Rectangle bounds, const char *text, bool value);
 float widget_slider(Rectangle bounds, float min, float max, float value, const char *label);

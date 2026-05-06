@@ -8,6 +8,7 @@
 #include "core/layout.h"
 #include "raylib.h"
 
+// Fixed UI offsets keep the main control groups aligned across the screen.
 #define SIM_UI_LEFT_MARGIN 20.0f
 #define SIM_UI_SPEED_COUNTER_Y 20.0f
 #define SIM_UI_BODY_COUNT_Y 46.0f
@@ -19,12 +20,14 @@
 #define SIM_UI_ADVANCED_Y 202.0f
 #define SIM_UI_ADVANCED_PANEL_Y 252.0f
 
+// Draws a reusable dark panel background with a title.
 static void simulator_draw_panel(Rectangle panel, const char *title) {
     DrawRectangleRec(panel, (Color){30, 30, 30, 230});
     DrawRectangleLinesEx(panel, 2.0f, WHITE);
     DrawText(title, (int)(panel.x + 10), (int)(panel.y + 10), 20, WHITE);
 }
 
+// Returns a standard row rectangle inside a panel.
 static Rectangle simulator_panel_row(Rectangle panel, int index, float width) {
     return (Rectangle){
         panel.x + 10.0f,
@@ -34,10 +37,12 @@ static Rectangle simulator_panel_row(Rectangle panel, int index, float width) {
     };
 }
 
+// Draws the Options panel for trail mode and velocity-vector display.
 static void simulator_draw_options(Simulator *sim) {
     Rectangle panel = layout_anchor(220, 130, LAYOUT_TOP_RIGHT, SIM_UI_RIGHT_MARGIN, SIM_UI_OPTIONS_Y);
     const char *path_label = "Paths: Off";
 
+    // Convert enum state into the label shown on the cycling path button.
     switch (sim->path_mode) {
         case PATH_MODE_SHORT:
             path_label = "Paths: Short";
@@ -63,6 +68,7 @@ static void simulator_draw_options(Simulator *sim) {
     );
 
     if (path_clicked && !sim->controls_blocked) {
+        // Cycle through Off, Short, Long, and Orbit modes.
         sim->path_mode = (PathMode)((sim->path_mode + 1) % 4);
     }
 
@@ -73,11 +79,14 @@ static void simulator_draw_options(Simulator *sim) {
     );
 
     if (!sim->controls_blocked) {
+        // Keep drawing the toggle even when blocked, but only accept state changes when allowed.
         sim->show_current_trajectory = show_current_trajectory;
     }
 }
 
+// Draws elapsed simulation time as HH:MM:SS.
 static void simulator_draw_time_display(double sim_time_seconds) {
+    // Drop fractional seconds for a stable, readable HUD.
     long long total_seconds = (long long)sim_time_seconds;
     long long hours = total_seconds / 3600;
     long long minutes = (total_seconds / 60) % 60;
@@ -95,6 +104,7 @@ static void simulator_draw_time_display(double sim_time_seconds) {
     );
 }
 
+// Draws speed dropdown, slider, preset buttons, and number-key shortcuts.
 static void simulator_draw_speed_control(Simulator *sim, float *sim_speed) {
     Rectangle button = layout_anchor(86, 34, LAYOUT_BOTTOM_RIGHT, 20, 20);
     Rectangle presets = layout_anchor(248, 30, LAYOUT_BOTTOM_RIGHT, 62, 22);
@@ -122,6 +132,7 @@ static void simulator_draw_speed_control(Simulator *sim, float *sim_speed) {
         );
 
         if (!sim->controls_blocked) {
+            // Slider is drawn regardless, but placing a body blocks it from changing state.
             *sim_speed = slider_speed;
         }
     }
@@ -136,12 +147,14 @@ static void simulator_draw_speed_control(Simulator *sim, float *sim_speed) {
         bool preset_clicked = widget_button(preset_button, preset_labels[i]);
 
         if (!sim->controls_blocked && (preset_clicked ||
+            // Keyboard shortcuts match the visible preset buttons.
             (!sim->input_blocked && (IsKeyPressed(preset_keys[i]) || IsKeyPressed(preset_keypad_keys[i]))))) {
             *sim_speed = preset_values[i];
         }
     }
 }
 
+// Checks whether text contains anything besides spaces/tabs.
 static bool simulator_text_has_visible_char(const char *text) {
     for (int i = 0; text[i] != '\0'; i++) {
         if (text[i] != ' ' && text[i] != '\t') {
@@ -152,6 +165,7 @@ static bool simulator_text_has_visible_char(const char *text) {
     return false;
 }
 
+// Handles typing inside the save-name prompt.
 static void simulator_update_save_name_input(Simulator *sim) {
     int len = (int)strlen(sim->save_system_name);
     int key = GetCharPressed();
@@ -160,6 +174,7 @@ static void simulator_update_save_name_input(Simulator *sim) {
         bool allowed = key >= 32 && key <= 126;
 
         if (allowed && len < (int)sizeof(sim->save_system_name) - 1) {
+            // Append printable ASCII characters until the fixed buffer is full.
             sim->save_system_name[len++] = (char)key;
             sim->save_system_name[len] = '\0';
         }
@@ -172,12 +187,14 @@ static void simulator_update_save_name_input(Simulator *sim) {
     }
 }
 
+// Opens save modal and clears the previous name so each save starts explicit.
 static void simulator_open_save_prompt(Simulator *sim) {
     sim->save_system_name[0] = '\0';
     sim->save_prompt_open = true;
     sim->template_menu_open = false;
 }
 
+// Draws the small red delete button for saved systems.
 static bool simulator_delete_saved_system_button(Rectangle bounds) {
     Vector2 mouse = GetMousePosition();
     bool hovered = CheckCollisionPointRec(mouse, bounds);
@@ -198,6 +215,7 @@ static bool simulator_delete_saved_system_button(Rectangle bounds) {
     return hovered && IsMouseButtonPressed(MOUSE_LEFT_BUTTON);
 }
 
+// Draws the modal prompt that asks for a saved-system name.
 static void simulator_draw_save_prompt(Simulator *sim) {
     if (!sim->save_prompt_open) {
         return;
@@ -208,6 +226,7 @@ static void simulator_draw_save_prompt(Simulator *sim) {
     Rectangle confirm = layout_relative(panel, 0.06f, 0.70f, 0.42f, 0.20f);
     Rectangle cancel = layout_relative(panel, 0.52f, 0.70f, 0.42f, 0.20f);
 
+    // While this prompt is open, app.c marks simulator input as blocked.
     simulator_update_save_name_input(sim);
 
     DrawRectangleRec(panel, (Color){30, 30, 30, 240});
@@ -221,6 +240,7 @@ static void simulator_draw_save_prompt(Simulator *sim) {
     int text_width = MeasureText(sim->save_system_name, font_size);
 
     while (font_size > 10 && text_width > input.width - 16.0f) {
+        // Shrink long names instead of letting text overflow the input box.
         font_size--;
         text_width = MeasureText(sim->save_system_name, font_size);
     }
@@ -231,6 +251,7 @@ static void simulator_draw_save_prompt(Simulator *sim) {
     bool confirm_clicked = widget_button(confirm, "Confirm");
 
     if (can_save && !sim->controls_blocked && (confirm_clicked || IsKeyPressed(KEY_ENTER))) {
+        // app.c performs the file write after seeing this request flag.
         sim->save_system_requested = true;
         sim->save_prompt_open = false;
         sim->template_menu_open = true;
@@ -241,10 +262,12 @@ static void simulator_draw_save_prompt(Simulator *sim) {
     }
 }
 
+// Draws origin/home navigation button.
 static void simulator_draw_navigation(Simulator *sim) {
     Rectangle origin_button = layout_anchor(30, 30, LAYOUT_BOTTOM_LEFT, 20, 20);
 
     if (widget_image_button(origin_button, sim->origin_icon) && !sim->controls_blocked) {
+        // Return to the fixed origin and stop following any locked body.
         sim->camera_focus = SIMULATOR_ORIGIN;
         sim->camera_pan = (Vector2){0.0f, 0.0f};
         sim->locked_body_index = -1;
@@ -252,12 +275,14 @@ static void simulator_draw_navigation(Simulator *sim) {
     }
 }
 
+// Draws built-in templates plus user-saved systems.
 static void simulator_draw_templates_menu(Simulator *sim) {
     Rectangle menu_button = layout_anchor(140, 30, LAYOUT_BOTTOM_LEFT, 60, 20);
     Rectangle save_button = layout_anchor(140, 30, LAYOUT_BOTTOM_LEFT, 210, 20);
 
     if (widget_button(menu_button, "Templates") && !sim->controls_blocked) {
         sim->template_menu_open = !sim->template_menu_open;
+        // Keep only one large menu open on this side of the screen.
         sim->body_menu_open = false;
     }
 
@@ -271,6 +296,7 @@ static void simulator_draw_templates_menu(Simulator *sim) {
 
     int template_count = simulator_template_count();
     int row_count = template_count + sim->saved_system_count;
+    // Panel height grows to fit both built-in and saved rows.
     Rectangle panel = layout_anchor(260, 50.0f + row_count * 34.0f, LAYOUT_BOTTOM_LEFT, 60, 60);
 
     simulator_draw_panel(panel, "Templates");
@@ -281,6 +307,7 @@ static void simulator_draw_templates_menu(Simulator *sim) {
         Rectangle button = simulator_panel_row(panel, i, panel.width - 20.0f);
 
         if (i == sim->active_template_index) {
+            // Highlight the currently active built-in template.
             DrawRectangleLinesEx(
                 (Rectangle){button.x - 3.0f, button.y - 3.0f, button.width + 6.0f, button.height + 6.0f},
                 2.0f,
@@ -289,6 +316,7 @@ static void simulator_draw_templates_menu(Simulator *sim) {
         }
 
         if (widget_button(button, label) && !sim->controls_blocked) {
+            // Request is handled by app.c because it owns the actual body array.
             sim->requested_template_index = i;
             sim->template_menu_open = false;
         }
@@ -307,20 +335,24 @@ static void simulator_draw_templates_menu(Simulator *sim) {
         bool delete_hovered = CheckCollisionPointRec(mouse, delete_button);
 
         if (widget_button(button, sim->saved_system_names[i]) && !delete_hovered && !sim->controls_blocked) {
+            // Saved-system loading also goes through app.c for file parsing/body replacement.
             sim->requested_saved_system_index = i;
             sim->template_menu_open = false;
         }
 
         if (button_hovered && simulator_delete_saved_system_button(delete_button) && !sim->controls_blocked) {
+            // Delete request is deferred so the UI draw function does not edit files directly.
             sim->delete_saved_system_index = i;
         }
     }
 }
 
+// Draws expanded per-body stats inside the Advanced menu.
 static void simulator_draw_body_stats(const Body *body, Rectangle panel, float *cursor_y) {
     Vector2 acceleration = {0.0f, 0.0f};
 
     if (body->mass != 0.0f) {
+        // Display acceleration from F = m * a, rearranged as a = F / m.
         acceleration = vec2_vscale(body->force, 1.0f / body->mass);
     }
 
@@ -334,6 +366,7 @@ static void simulator_draw_body_stats(const Body *body, Rectangle panel, float *
     *cursor_y += 26.0f;
 }
 
+// Draws collapsible body-stat rows so many bodies do not fill the screen at once.
 static void simulator_draw_advanced_menu(Simulator *sim, Body bodies[], int body_count) {
     Rectangle menu_button = layout_anchor(220, 40, LAYOUT_TOP_RIGHT, SIM_UI_RIGHT_MARGIN, SIM_UI_ADVANCED_Y);
 
@@ -349,6 +382,7 @@ static void simulator_draw_advanced_menu(Simulator *sim, Body bodies[], int body
         sim->stats_body_index = -1;
     }
 
+    // Compute panel height dynamically so expanded rows have room for their stats.
     float panel_height = 52.0f;
 
     if (body_count <= 0) {
@@ -383,6 +417,7 @@ static void simulator_draw_advanced_menu(Simulator *sim, Body bodies[], int body
         bool is_open = widget_dropdown(header, bodies[i].name, was_open);
 
         if (sim->controls_blocked) {
+            // Keep current open row visible while placement mode blocks changes.
             is_open = was_open;
         }
 
@@ -400,6 +435,7 @@ static void simulator_draw_advanced_menu(Simulator *sim, Body bodies[], int body
     }
 }
 
+// Draws body lock menu with lock, edit, and delete actions for each body.
 static void simulator_draw_body_lock_menu(Simulator *sim, Body bodies[], int body_count) {
     Rectangle menu_button = layout_anchor(220, 40, LAYOUT_TOP_LEFT, SIM_UI_LEFT_MARGIN, SIM_UI_BODY_LOCK_Y);
 
@@ -409,6 +445,7 @@ static void simulator_draw_body_lock_menu(Simulator *sim, Body bodies[], int bod
 
     if (sim->locked_body_index >= 0) {
         if (widget_button(layout_anchor(100, 40, LAYOUT_TOP_LEFT, 250, SIM_UI_BODY_LOCK_Y), "Unlock") && !sim->controls_blocked) {
+            // Unlock leaves the camera where it is instead of snapping home.
             sim->locked_body_index = -1;
         }
     }
@@ -418,6 +455,7 @@ static void simulator_draw_body_lock_menu(Simulator *sim, Body bodies[], int bod
     }
 
     float panel_height = 50.0f + body_count * 34.0f;
+    // The body list opens next to the Body Lock button.
     Rectangle panel = layout_anchor(340, panel_height, LAYOUT_TOP_LEFT, 250, SIM_UI_BODY_LOCK_Y + 50.0f);
 
     simulator_draw_panel(panel, "Bodies");
@@ -456,6 +494,7 @@ static void simulator_draw_body_lock_menu(Simulator *sim, Body bodies[], int bod
         DrawRectangleLinesEx(color_chip, 1.0f, BLACK);
 
         if (widget_button(name_button, label) && !sim->controls_blocked) {
+            // Lock immediately centers camera focus on the chosen body.
             sim->locked_body_index = i;
             sim->camera_focus = bodies[i].position;
             sim->camera_pan = (Vector2){0.0f, 0.0f};
@@ -463,16 +502,19 @@ static void simulator_draw_body_lock_menu(Simulator *sim, Body bodies[], int bod
         }
 
         if (widget_button(edit_button, "Edit") && !sim->controls_blocked) {
+            // app.c opens the editor because it owns the body data.
             sim->edit_body_index = i;
             sim->body_menu_open = false;
         }
 
         if (widget_button(delete_button, "Del") && !sim->controls_blocked) {
+            // app.c performs deletion so all dependent indices can be fixed together.
             sim->delete_body_index = i;
         }
     }
 }
 
+// Draws all simulator controls and writes back changed speed/paused state.
 void simulator_draw_controls(Simulator *sim, Body bodies[], float *sim_speed, bool *paused, int body_count, double sim_time_seconds) {
     bool next_paused = widget_toggle(
         layout_anchor(105, 40, LAYOUT_TOP_LEFT, SIM_UI_LEFT_MARGIN, SIM_UI_PAUSE_Y),
@@ -481,10 +523,12 @@ void simulator_draw_controls(Simulator *sim, Body bodies[], float *sim_speed, bo
     );
 
     if (!sim->controls_blocked) {
+        // Toggle is still visible while blocked, but the state only changes when allowed.
         *paused = next_paused;
     }
 
     if (widget_button(layout_anchor(105, 40, LAYOUT_TOP_LEFT, 135, SIM_UI_PAUSE_Y), "Reset") && !sim->controls_blocked) {
+        // Reset reloads the active template through app.c.
         sim->requested_template_index = sim->active_template_index;
         sim->template_menu_open = false;
     }
@@ -498,6 +542,7 @@ void simulator_draw_controls(Simulator *sim, Body bodies[], float *sim_speed, bo
     simulator_draw_body_lock_menu(sim, bodies, body_count);
     simulator_draw_save_prompt(sim);
 
+    // Status labels are drawn last so they sit above the scene and menus.
     Rectangle speed_text = layout_anchor(220, 22, LAYOUT_TOP_LEFT, SIM_UI_LEFT_MARGIN, SIM_UI_SPEED_COUNTER_Y);
     DrawText(TextFormat("Speed: %.2fx", *sim_speed), (int)speed_text.x, (int)speed_text.y, 20, WHITE);
     DrawText(TextFormat("Bodies: %d", body_count), (int)SIM_UI_LEFT_MARGIN, (int)SIM_UI_BODY_COUNT_Y, 20, WHITE);

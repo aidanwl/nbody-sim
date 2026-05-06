@@ -1,6 +1,8 @@
 #include "core/layout.h"
 
+// Returns a screen-space rectangle anchored to one side/corner of the current window.
 Rectangle layout_anchor(float width, float height, LayoutAnchor anchor, float margin_x, float margin_y) {
+    // Pull the current size every frame so UI follows window resizing.
     float screen_width = (float)GetScreenWidth();
     float screen_height = (float)GetScreenHeight();
 
@@ -11,6 +13,7 @@ Rectangle layout_anchor(float width, float height, LayoutAnchor anchor, float ma
         .height = height
     };
 
+    // Each case computes the top-left corner for the requested anchor.
     switch (anchor) {
         case LAYOUT_TOP_LEFT:
             rect.x = margin_x;
@@ -41,6 +44,7 @@ Rectangle layout_anchor(float width, float height, LayoutAnchor anchor, float ma
     return rect;
 }
 
+// Converts normalized parent-relative coordinates into an absolute rectangle.
 Rectangle layout_relative(Rectangle parent, float x, float y, float width, float height) {
     return (Rectangle){
         .x = parent.x + parent.width * x,

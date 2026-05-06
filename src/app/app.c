@@ -13,15 +13,18 @@
 #include "core/widget.h"
 
 static Simulator simulator;
+// Accumulates scaled frame time so physics can run at a stable fixed timestep.
 static float simulation_accumulator = 0.0f;
 
 #define USER_SYSTEM_FILE "user_systems.txt"
 #define MAX_SAVED_SYSTEMS 16
 
+// Trims newline characters from end of text (for reading system names from file)
 static void trim_newline(char *text) {
     text[strcspn(text, "\r\n")] = '\0';
 }
 
+// Checks if text has any visible characters (prevents saving systems with blank names)
 static bool text_has_visible_char(const char *text) {
     for (int i = 0; text[i] != '\0'; i++) {
         if (text[i] != ' ' && text[i] != '\t') {
@@ -32,10 +35,12 @@ static bool text_has_visible_char(const char *text) {
     return false;
 }
 
+// Loads saved system names from text file in build folder into templates menu
 static void app_refresh_saved_systems(void) {
     FILE *file = fopen(USER_SYSTEM_FILE, "r");
     char line[256];
 
+    // Rebuild the list from scratch so the Templates menu matches the file.
     simulator.saved_system_count = 0;
 
     if (file == NULL) {
@@ -43,6 +48,7 @@ static void app_refresh_saved_systems(void) {
     }
 
     while (fgets(line, sizeof(line), file) != NULL && simulator.saved_system_count < MAX_SAVED_SYSTEMS) {
+        // Saved systems start with "S "; body lines start with "B ".
         if (line[0] != 'S' || line[1] != ' ') {
             continue;
         }
@@ -60,6 +66,7 @@ static void app_refresh_saved_systems(void) {
     fclose(file);
 }
 
+// Resets body trail data when loading from template or saved system, or when editing body
 static void app_reset_body_trail(Body *body) {
     body->force = (Vector2){0.0f, 0.0f};
     body->trail_count = 0;
@@ -67,9 +74,11 @@ static void app_reset_body_trail(Body *body) {
     body->trail_sample_counter = 0;
 }
 
+// Converts body draft (used in body creator) into real body when adding or editing
 static Body app_body_from_draft(const BodyDraft *draft) {
     Body body = {
         .mass = draft->mass,
+        // Draft position is stored in screen space while editing, so convert before simulating.
         .position = simulator_screen_to_world(&simulator, draft->position),
         .velocity = draft->velocity,
         .force = {0.0f, 0.0f},
@@ -83,10 +92,12 @@ static Body app_body_from_draft(const BodyDraft *draft) {
     return body;
 }
 
+// Saves system into text file in build folder (creating if it doesn't exist, and appending if it does), then refreshes saved systems in templates menu
 static void app_save_system(App *app) {
     FILE *file = fopen(USER_SYSTEM_FILE, "a");
     char system_name[sizeof(simulator.save_system_name)];
 
+    // Clear the request immediately so a failed save does not repeat every frame.
     simulator.save_system_requested = false;
     simulator.save_prompt_open = false;
 
@@ -101,6 +112,7 @@ static void app_save_system(App *app) {
         snprintf(system_name, sizeof(system_name), "Saved System %d", simulator.saved_system_count + 1);
     }
 
+    // File format: S line names the system, N line stores body count, B lines store bodies.
     fprintf(file, "S %s\n", system_name);
     fprintf(file, "N %d\n", app->body_count);
 
@@ -128,6 +140,7 @@ static void app_save_system(App *app) {
     app_refresh_saved_systems();
 }
 
+// Parses body data from saved system file, return true if successful, false if line is malformed
 static bool parse_saved_body(const char *line, Body *body) {
     unsigned int r = 255;
     unsigned int g = 255;
@@ -135,6 +148,7 @@ static bool parse_saved_body(const char *line, Body *body) {
     unsigned int a = 255;
     int name_offset = 0;
 
+    // %n records where the body name begins after all numeric/color fields.
     int matched = sscanf(
         line,
         "B %f %f %f %f %f %u %u %u %u %n",
@@ -154,6 +168,7 @@ static bool parse_saved_body(const char *line, Body *body) {
         return false;
     }
 
+    // The name may contain spaces, so copy the rest of the line instead of using %s.
     snprintf(body->name, sizeof(body->name), "%s", line + name_offset);
     trim_newline(body->name);
     body->color = (Color){(unsigned char)r, (unsigned char)g, (unsigned char)b, (unsigned char)a};
@@ -161,6 +176,7 @@ static bool parse_saved_body(const char *line, Body *body) {
     return true;
 }
 
+// Loads bodies from a system file, resets simulation state, and preserves path/trajectory settings; returns false if the file is invalid.
 static bool app_load_saved_system(App *app, int saved_index) {
     FILE *file = fopen(USER_SYSTEM_FILE, "r");
     char line[256];
@@ -173,6 +189,7 @@ static bool app_load_saved_system(App *app, int saved_index) {
     }
 
     while (fgets(line, sizeof(line), file) != NULL) {
+        // Count only system header lines until we reach the requested saved system.
         if (line[0] != 'S' || line[1] != ' ') {
             continue;
         }
@@ -202,6 +219,7 @@ static bool app_load_saved_system(App *app, int saved_index) {
             }
         }
 
+        // Loading resets the sim but keeps the user's current display settings.
         PathMode path_mode = simulator.path_mode;
         bool show_current_trajectory = simulator.show_current_trajectory;
 
@@ -228,6 +246,7 @@ static bool app_load_saved_system(App *app, int saved_index) {
     return false;
 }
 
+// Deletes saved user system by copying all systems except the deleted one to a temporary file, then replacing the original file with the temporary one (refreshes templates menu after for instant changes)
 static void app_delete_saved_system(int saved_index) {
     FILE *source = fopen(USER_SYSTEM_FILE, "r");
     FILE *target = NULL;
@@ -252,6 +271,7 @@ static void app_delete_saved_system(int saved_index) {
 
     while (fgets(line, sizeof(line), source) != NULL) {
         if (skip_body_lines > 0) {
+            // Skip the body records that belong to the deleted saved system.
             skip_body_lines--;
             continue;
         }
@@ -260,6 +280,7 @@ static void app_delete_saved_system(int saved_index) {
             current_index++;
 
             if (current_index == saved_index) {
+                // Read the following N line so we know how many B lines to skip.
                 if (fgets(line, sizeof(line), source) != NULL) {
                     int body_count = 0;
 
@@ -277,6 +298,7 @@ static void app_delete_saved_system(int saved_index) {
     fclose(source);
     fclose(target);
 
+    // Replace the original only after the temporary file was written.
     if (remove(USER_SYSTEM_FILE) != 0 || rename(USER_SYSTEM_FILE ".tmp", USER_SYSTEM_FILE) != 0) {
         remove(USER_SYSTEM_FILE ".tmp");
         app_refresh_saved_systems();
@@ -298,12 +320,14 @@ static void app_delete_body(App *app, int index) {
         return;
     }
 
+    // Compact the fixed body array after removing the requested index.
     for (int i = index; i < app->body_count - 1; i++) {
         app->bodies[i] = app->bodies[i + 1];
     }
 
     app->body_count--;
 
+    // Any stored UI indices after the deleted body must shift with the array.
     if (simulator.locked_body_index == index) {
         simulator.locked_body_index = -1;
     } else if (simulator.locked_body_index > index) {
@@ -337,6 +361,7 @@ static void app_load_template(App *app, int template_index) {
         return;
     }
 
+    // Template changes reset physics state but preserve user-selected display options.
     PathMode path_mode = simulator.path_mode;
     bool show_current_trajectory = simulator.show_current_trajectory;
 
@@ -364,6 +389,7 @@ static void app_add_pending_body(App *app) {
 
     if (app->body_count < MAX_BODIES) {
         BodyDraft *draft = &app->pending_body;
+        // App owns the real body array; the editor only provides draft values.
         app->bodies[app->body_count] = app_body_from_draft(draft);
         app->body_count++;
     }
@@ -371,12 +397,14 @@ static void app_add_pending_body(App *app) {
     app->add_body_requested = false;
 }
 
+// Applies pending edit to body when clicking confirm in edit prompt
 static void app_apply_pending_edit(App *app) {
     if (!app->edit_body_requested) {
         return;
     }
 
     if (app->editing_body_index >= 0 && app->editing_body_index < app->body_count) {
+        // Rebuild the body so edited values get clean force/trail state.
         app->bodies[app->editing_body_index] = app_body_from_draft(&app->pending_body);
     }
 
@@ -384,6 +412,7 @@ static void app_apply_pending_edit(App *app) {
     app->editing_body_index = -1;
 }
 
+// Start editing body by filling body creator draft with current body's data and opening body creator prompt
 static void app_start_edit_body(App *app, int index) {
     if (index < 0 || index >= app->body_count) {
         simulator.edit_body_index = -1;
@@ -393,6 +422,7 @@ static void app_start_edit_body(App *app, int index) {
     Body *body = &app->bodies[index];
     BodyDraft draft = {
         .mass = body->mass,
+        // Editor works in screen space so the marker appears where the body is drawn.
         .position = simulator_world_to_screen(&simulator, body->position),
         .velocity = body->velocity,
         .color = body->color
@@ -406,12 +436,13 @@ static void app_start_edit_body(App *app, int index) {
     simulator.edit_body_index = -1;
 }
 
-// Centers camera on body (in body creator prompt)
+// Centers camera on draft body (in body creator prompt)
 static void app_handle_center_request(App *app) {
     if (!app->creator.center_requested) {
         return;
     }
 
+    // Convert the draft marker to world space, center the camera there, then keep the marker visually centered.
     Vector2 world_pos = simulator_screen_to_world(&simulator, app->creator.draft.position);
 
     simulator_center_on_world(&simulator, world_pos);
@@ -424,6 +455,7 @@ static void app_handle_center_request(App *app) {
 
 // Sets the priority of different actions
 static bool app_process_requests(App *app) {
+    // Template/load requests return early because they replace most app state.
     if (simulator.requested_template_index >= 0) {
         app_load_template(app, simulator.requested_template_index);
         return true;
@@ -438,6 +470,7 @@ static bool app_process_requests(App *app) {
         app_save_system(app);
     }
 
+    // Remaining requests are independent and can be handled in the same frame.
     if (simulator.delete_saved_system_index >= 0) {
         app_delete_saved_system(simulator.delete_saved_system_index);
     }
@@ -470,12 +503,14 @@ static void app_update_simulation(App *app) {
         return;
     }
 
+    // UI speed multiplies elapsed real time before feeding the fixed-step accumulator.
     double scaled_dt = (double)app->dt * (double)app->sim_speed;
 
     app->sim_time_seconds += scaled_dt;
     simulation_accumulator += (float)scaled_dt;
 
     while (simulation_accumulator >= fixed_dt) {
+        // Run as many fixed steps as needed to catch up without tying physics to FPS.
         time_step(app->bodies, app->body_count, fixed_dt);
         simulation_accumulator -= fixed_dt;
     }
@@ -501,12 +536,14 @@ void app_init(App *app, int screen_width, int screen_height) {
 
 // Main update function for each frame
 void app_update(App *app) {
+    // GetFrameTime is a raylib call that returns seconds since the last frame.
     app->dt = GetFrameTime();
 
     if (app_process_requests(app)) {
         return;
     }
 
+    // Text boxes/modals block simulator shortcuts and camera input.
     simulator.input_blocked = body_creator_blocks_movement(&app->creator) || simulator.save_prompt_open;
     if (!simulator.input_blocked && IsKeyPressed(KEY_SPACE)) {
         app->paused = !app->paused;
@@ -518,6 +555,7 @@ void app_update(App *app) {
 
 // Main draw function for each frame
 void app_draw(App *app) {
+    // While placing a body, simulator controls stay visible but should not mutate state.
     simulator.controls_blocked = app->creator.placing;
 
     simulator_draw(
@@ -539,6 +577,7 @@ void app_draw(App *app) {
     if (body_creator_draw(&app->creator, app->screen_width, app->screen_height)) {
         bool was_editing = app->creator.editing;
 
+        // Store the confirmed draft as a request; app_update/app_process_requests applies it.
         app->pending_body = app->creator.draft;
         app->add_body_requested = !was_editing;
         app->edit_body_requested = was_editing;
