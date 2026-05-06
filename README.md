@@ -9,7 +9,7 @@ The project is structured with modular physics, rendering, math, and UI componen
 
 ### Installation
 
-This proejct uses raylib, which depends on several X11 and OpenGL development packages on Linux systems. 
+This project uses raylib, which depends on several X11 and OpenGL development packages on Linux systems. 
 
 Install the required dependencies with:
 
